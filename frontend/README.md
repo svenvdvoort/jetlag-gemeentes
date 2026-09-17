@@ -40,7 +40,9 @@ Plain HTML/CSS/JS - no build step, no framework, no bundler. Open
 jetlag-frontend/
 ├── index.html
 ├── css/styles.css
-├── data/gemeentes.sample.kml   # replace with your real export
+├── data/
+│   ├── gemeentes.sample.kml    # replace with your real export
+│   └── fonts/                  # glyphs for the map labels (see its README)
 └── js/
     ├── config.js       # all tunables: API URL, colors, basemap toggle, gemeente list
     ├── api.js          # fetch wrappers for the 4 backend endpoints
@@ -57,6 +59,37 @@ change - initial load, manual refresh, or the result of a claim/discard
 and score bar entirely from `State`. Nothing is patched incrementally, so
 the UI can't drift out of sync with itself. At this game's scale
 (~60 cards, a handful of teams) a full redraw is cheap.
+
+**Name labels**: every gemeente is labelled at the center of its largest
+part, from a separate point source built once at load
+(`buildLabelPoints()` in `js/map-view.js`). Labelling the polygon layer
+directly would have been less code, but MapLibre labels every part of a
+multipolygon, so the seven gemeentes with an exclave or an island would
+each get their name twice. "Center" is the area centroid, with a
+fallback for the case where that lands outside the gemeente's own
+borders - a crescent shape, or one wrapped around an enclave the way
+Rheden wraps around Rozendaal. All 60 currently land inside the gemeente
+they name. MapLibre drops any label that would collide with one already
+placed, so small gemeentes stay unnamed until you zoom in; below
+`MAP_LABELS.minZoom` they're all hidden.
+
+Text needs glyphs, which is what `CONFIG.GLYPHS_URL` points at. They're
+served from `data/fonts/` rather than a font server, so labels work
+offline and don't break if someone else's hosting goes away - see
+`data/fonts/README.md`. Setting `GLYPHS_URL` to `""` turns labels off
+entirely and stops the map requesting any glyphs at all.
+
+**Hover highlighting**: hovering a gemeente fills and outlines it, and
+tints every gemeente it borders, so you can see at a glance what a claim
+would connect to. This is the one thing that deliberately sits outside
+the redraw-everything flow above: it only swaps the `filter` on four
+dedicated highlight layers (`MapView._setHovered()`) rather than
+re-uploading the whole polygon source on every mouse move. Borders come
+from the same `GET /pairs` graph scoring uses, so before that request
+lands only the hovered gemeente's own outline shows. It's wired up only
+on devices with a real pointer - touch browsers fire a mousemove on tap
+but never a matching mouseleave, which would leave the highlight stuck on
+the last gemeente tapped, and a tap already opens its card.
 
 **Refreshing**: per your instructions, there's no polling and no
 websockets - only the refresh button (spinner icon, top right), plus an
@@ -93,12 +126,21 @@ see its effect. To see *other* teams' moves, someone has to tap refresh.
 - **No team roster caching**: `GET /{game_id}/teams` is re-fetched on
   every refresh alongside cards. Teams rarely change mid-game, so this
   is deliberate simplicity over a micro-optimization, not an oversight.
-- **Scoring** is a flat count of claimed gemeentes per team
-  (`State.scores()` in `js/state.js`), matching the current backend
-  logic. It's factored into its own function specifically so it can
-  later be swapped for a connected-component count without touching any
-  rendering code - that version will need a gemeente adjacency graph,
-  which doesn't exist yet on either side.
+- **Scoring** counts connected areas, not raw claims (`State.scores()` in
+  `js/state.js`). A team's score is its largest group of claimed
+  gemeentes that border each other, so a team holding two separate
+  groups only scores the bigger one. The score bar shows that number
+  with the total claimed in brackets after it - `8 (14)` - and the map
+  highlights every team's counting group. When several groups tie for
+  largest, one of them is picked at random - outlining all of them would
+  suggest more gemeentes are scoring than the score says. The pick is
+  re-rolled on each render, so a tie can land on a different group from
+  one refresh to the next.
+  The adjacency graph comes from `GET /pairs`, fetched once at startup
+  in `initApp()` rather than on every refresh, since gemeente borders
+  are static. If that request fails the score falls back to the plain
+  claimed count, nothing is outlined, and a `console.warn` is logged -
+  scoring degrades, but the board stays playable.
 - **No auth**: `game` and `team` are plain URL query parameters. Anyone
   with the URL can act as that team. Fine for a friend group who trust
   each other; not fine beyond that.

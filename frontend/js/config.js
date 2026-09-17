@@ -25,6 +25,27 @@ const CONFIG = {
   MAP_CENTER: [6.15, 52.25],
   MAP_ZOOM: 9,
 
+  // Where MapLibre fetches its text glyphs from. Rendering *any* text on
+  // the map needs these - without a glyphs URL the gemeente name labels
+  // can't be drawn at all, so setting this to "" turns the labels off.
+  // The fonts ship with the app (data/fonts, see the README in there),
+  // so labels work offline and don't depend on a font server staying up.
+  GLYPHS_URL: "data/fonts/{fontstack}/{range}.pbf",
+
+  // Gemeente name labels, drawn on top of everything else. MapLibre
+  // hides any label that would collide with one already placed, so the
+  // smaller gemeentes lose their name until you zoom in far enough for
+  // it to fit - that's why the size grows with zoom.
+  MAP_LABELS: {
+    font: ["Noto Sans Regular"], // must exist on the GLYPHS_URL server
+    color: "#22211C",
+    haloColor: "#FBFAF4", // halo, not a fill, so team colors stay readable underneath
+    haloWidth: 1.2,
+    minZoom: 8, // below this the map is mostly a shape overview; names just clutter
+    minSize: 11,
+    maxSize: 16,
+  },
+
   TEAM_COLORS: {
     orange: "#E2762A",
     purple: "#552b7f",
@@ -42,6 +63,20 @@ const CONFIG = {
     privateOpacity: 0.32,
     claimedOpacity: 0.8,
     strokeColor: "#8A8672",
+    strokeWidth: 2.5,
+    claimedStrokeWidth: 4,
+
+    // Hovering a gemeente outlines it and highlights everything it
+    // borders (see MapView._setHovered). Drawn on top of the regular
+    // fills, so these have to read against both the pale unclaimed
+    // colors and the saturated team ones.
+    hoverColor: "#22211C", // same ink as its outline, so the two read as one shape
+    hoverOpacity: 0.8,
+    hoverStrokeColor: "#22211C",
+    hoverStrokeWidth: 4,
+    neighbourColor: "#22211C",
+    neighbourOpacity: 0.28,
+    neighbourStrokeWidth: 3.5,
   },
 
   // IMPORTANT - this must list every gemeente in EXACTLY the same order

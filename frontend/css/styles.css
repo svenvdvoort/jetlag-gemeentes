@@ -161,6 +161,12 @@ button {
   font-weight: 600;
 }
 
+/* Total claimed - secondary to the connected score next to it. */
+.score-chip__total {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+}
+
 /* ------------------------------------------------------------------ */
 /* Buttons                                                              */
 /* ------------------------------------------------------------------ */

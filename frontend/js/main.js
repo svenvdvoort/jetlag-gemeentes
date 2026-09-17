@@ -41,6 +41,15 @@ async function initApp() {
 
   MapView.init(document.getElementById("map"), geojson, (name) => UI.openCardModal(name));
 
+  // Static data, so it's fetched once here rather than in refreshAll().
+  // It has to land before the first refresh, since that's what triggers
+  // the opening map paint.
+  try {
+    State.setPairs(await Api.getPairs());
+  } catch (err) {
+    console.warn("Couldn't load gemeente borders; scores fall back to total claimed.", err);
+  }
+
   document.getElementById("refresh-btn").addEventListener("click", () => window.refreshAll());
 
   await window.refreshAll();

@@ -4,6 +4,10 @@
  * can just try/catch and show err.message.
  */
 const Api = {
+  getPairs() {
+    return request("/pairs");
+  },
+
   getTeams(gameId) {
     return request(`/${gameId}/teams`);
   },

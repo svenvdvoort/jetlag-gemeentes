@@ -9,9 +9,11 @@
  */
 const UI = {
   init() {
-    document.getElementById("cards-panel-handle").addEventListener("click", () => {
-      document.getElementById("cards-panel").classList.toggle("expanded");
-    });
+    document
+      .getElementById("cards-panel-handle")
+      .addEventListener("click", () => {
+        document.getElementById("cards-panel").classList.toggle("expanded");
+      });
 
     document.getElementById("modal-overlay").addEventListener("click", (e) => {
       if (e.target.id === "modal-overlay") Modal.close();
@@ -84,7 +86,7 @@ function renderCardsPanel() {
     }`;
     button.setAttribute("aria-label", `Open ${card.card_name}`);
     if (isMine) {
-      team_color = CONFIG.TEAM_COLORS[State.myTeamColor]
+      team_color = CONFIG.TEAM_COLORS[State.myTeamColor];
       button.setAttribute("style", `background-color: ${team_color}52;`);
     }
     button.innerHTML = `
@@ -105,12 +107,15 @@ function renderScoreBar() {
   container.innerHTML = "";
 
   for (const team of State.teams) {
+    const score = scores[team.team_color] || { connected: 0, total: 0 };
     const chip = document.createElement("div");
     chip.className = "score-chip";
+    chip.title = "Team score (total claimed)";
     chip.innerHTML = `
       <span class="score-chip__dot" style="background:${CONFIG.TEAM_COLORS[team.team_color] || "#999"}"></span>
       <span class="score-chip__name">${escapeHtml(team.team_name)}</span>
-      <span class="score-chip__value">${scores[team.team_color] || 0}</span>
+      <span class="score-chip__value">${score.connected}</span>
+      <span class="score-chip__total">(${score.total})</span>
     `;
     container.appendChild(chip);
   }
@@ -218,7 +223,9 @@ function buildDetailView(context) {
     ${error ? `<p class="modal-error">${escapeHtml(error)}</p>` : ""}
   `;
 
-  wrap.querySelector(".modal-close").addEventListener("click", () => Modal.close());
+  wrap
+    .querySelector(".modal-close")
+    .addEventListener("click", () => Modal.close());
 
   if (card.card_state !== "Claimed") {
     const actions = document.createElement("div");
@@ -236,7 +243,10 @@ function buildDetailView(context) {
       targetSelect.innerHTML =
         `<option value="">Choose a gemeente...</option>` +
         State.unclaimedGemeentes()
-          .map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`)
+          .map(
+            (name) =>
+              `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`,
+          )
           .join("");
       field.appendChild(label);
       field.appendChild(targetSelect);
@@ -280,7 +290,9 @@ function buildConfirmView(context) {
     <p class="modal-description">${question}</p>
     ${error ? `<p class="modal-error">${escapeHtml(error)}</p>` : ""}
   `;
-  wrap.querySelector(".modal-close").addEventListener("click", () => Modal.close());
+  wrap
+    .querySelector(".modal-close")
+    .addEventListener("click", () => Modal.close());
 
   const actions = document.createElement("div");
   actions.className = "modal-actions";
@@ -295,7 +307,9 @@ function buildConfirmView(context) {
   confirmBtn.type = "button";
   confirmBtn.className = "btn btn--primary";
   confirmBtn.textContent = "Yes, confirm";
-  confirmBtn.addEventListener("click", () => performClaim(card, targetName, confirmBtn));
+  confirmBtn.addEventListener("click", () =>
+    performClaim(card, targetName, confirmBtn),
+  );
 
   actions.appendChild(cancelBtn);
   actions.appendChild(confirmBtn);
@@ -308,7 +322,12 @@ async function performClaim(card, targetName, triggerBtn) {
   triggerBtn.textContent = "Claiming...";
   try {
     const targetId = card.is_wild_card ? gemeenteCardId(targetName) : null;
-    const newCards = await Api.claimCard(State.gameId, State.myTeamColor, card.card_id, targetId);
+    const newCards = await Api.claimCard(
+      State.gameId,
+      State.myTeamColor,
+      card.card_id,
+      targetId,
+    );
     await window.refreshAll();
     Modal.showResult("claim", newCards);
   } catch (err) {
@@ -330,7 +349,9 @@ function buildDiscardPickView(context) {
     <p class="modal-description">Pick a card from the public board to send back to the deck.</p>
     ${error ? `<p class="modal-error">${escapeHtml(error)}</p>` : ""}
   `;
-  wrap.querySelector(".modal-close").addEventListener("click", () => Modal.close());
+  wrap
+    .querySelector(".modal-close")
+    .addEventListener("click", () => Modal.close());
 
   if (publicCards.length === 0) {
     const empty = document.createElement("p");
@@ -348,7 +369,9 @@ function buildDiscardPickView(context) {
     option.className = "discard-option";
     option.textContent = card.card_name;
     option.addEventListener("click", () => {
-      list.querySelectorAll(".discard-option").forEach((el) => el.classList.remove("discard-option--selected"));
+      list
+        .querySelectorAll(".discard-option")
+        .forEach((el) => el.classList.remove("discard-option--selected"));
       option.classList.add("discard-option--selected");
       context.selected = card;
       discardBtn.disabled = false;
@@ -383,7 +406,9 @@ function buildDiscardConfirmView(context) {
     <p class="modal-description">Discard <strong>${escapeHtml(selected.card_name)}</strong> and draw a new card onto the public board?</p>
     ${error ? `<p class="modal-error">${escapeHtml(error)}</p>` : ""}
   `;
-  wrap.querySelector(".modal-close").addEventListener("click", () => Modal.close());
+  wrap
+    .querySelector(".modal-close")
+    .addEventListener("click", () => Modal.close());
 
   const actions = document.createElement("div");
   actions.className = "modal-actions";
@@ -398,7 +423,9 @@ function buildDiscardConfirmView(context) {
   confirmBtn.type = "button";
   confirmBtn.className = "btn btn--danger";
   confirmBtn.textContent = "Yes, discard";
-  confirmBtn.addEventListener("click", () => performDiscard(selected, confirmBtn));
+  confirmBtn.addEventListener("click", () =>
+    performDiscard(selected, confirmBtn),
+  );
 
   actions.appendChild(cancelBtn);
   actions.appendChild(confirmBtn);
@@ -410,7 +437,11 @@ async function performDiscard(card, triggerBtn) {
   triggerBtn.disabled = true;
   triggerBtn.textContent = "Discarding...";
   try {
-    const newCard = await Api.discardCard(State.gameId, State.myTeamColor, card.card_id);
+    const newCard = await Api.discardCard(
+      State.gameId,
+      State.myTeamColor,
+      card.card_id,
+    );
     await window.refreshAll();
     Modal.showResult("discard", newCard ? [newCard] : []);
   } catch (err) {
@@ -437,7 +468,9 @@ function buildResultView(context) {
     </div>
     ${cardsHtml}
   `;
-  wrap.querySelector(".modal-close").addEventListener("click", () => Modal.close());
+  wrap
+    .querySelector(".modal-close")
+    .addEventListener("click", () => Modal.close());
 
   const actions = document.createElement("div");
   actions.className = "modal-actions";
