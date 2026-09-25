@@ -325,7 +325,7 @@ button {
 /* ------------------------------------------------------------------ */
 .playing-card {
   flex: 0 0 auto;
-  width: 92px;
+  width: 96px;
   height: 112px;
   border-radius: var(--radius-md);
   border: 1.5px solid var(--ink);
@@ -338,7 +338,6 @@ button {
   cursor: pointer;
   text-align: left;
   transition: transform 0.12s ease;
-  filter: drop-shadow(3px 3px 3px #333);
 }
 
 .playing-card:hover {
@@ -358,6 +357,29 @@ button {
   );
 }
 
+/* The gemeente's outline, filling the card above its name.
+
+   Drawn as a mask rather than an <img> so the silhouette takes a colour
+   from CSS instead of the flat black the file paints itself: the SVGs
+   fill with currentColor, which an <img> resolves against nothing. The
+   URL is a custom property because it's the one part that differs per
+   card, and renderCardsPanel sets it inline. */
+.playing-card__shape {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  background-color: var(--ink);
+  opacity: 0.78;
+  -webkit-mask-image: var(--shape);
+  mask-image: var(--shape);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
 .playing-card__name {
   font-family: var(--font-display);
   font-weight: 600;
@@ -367,7 +389,23 @@ button {
   text-align: center;
   margin: auto 0;
   width: 100%;
+  /* Card names are longer than a 96px card, and overflow-wrap on its own
+     snaps them wherever the line happens to run out - "Scherpenz|eel".
+     Hyphenating first breaks them where the page's language does instead;
+     overflow-wrap stays for when there's no dictionary to hand. */
+  hyphens: auto;
+  -webkit-hyphens: auto;
   overflow-wrap: break-word;
+}
+
+/* With a shape above it the name is a caption, not the whole card: it
+   drops to the foot at a size that still fits the two-line names, and
+   gives up the auto margins that were centring it in an empty card. */
+.playing-card__shape + .playing-card__name {
+  font-size: 0.68rem;
+  line-height: 1.1;
+  margin: 0.3rem 0 0;
+  flex: 0 0 auto;
 }
 
 /* ------------------------------------------------------------------ */

@@ -249,7 +249,8 @@ jetlag-api/
 │   │   └── games.py     # the game endpoints
 │   └── main.py          # FastAPI app entrypoint
 ├── scripts/
-│   └── import_challenges.py  # challenges.csv -> app/challenges.py
+│   ├── import_challenges.py     # challenges.csv -> app/challenges.py
+│   └── export_gemeente_svgs.py  # the CBS KML -> frontend/img/gemeentes/
 ├── requirements.txt
 ├── .env.example
 └── README.md
@@ -279,6 +280,61 @@ rather than position, so inserting a column in the sheet is safe.
 
 Cards whose challenge hasn't been written yet seed with empty text, which
 the frontend renders as a card with no description.
+
+## Gemeente shapes
+
+`frontend/data/CBS_2025_filtered_gemeenten.kml` is the source of truth for
+where the gemeentes are. It is also 6 MB of survey-grade lon/lat rings, which
+is the right thing for working out which gemeentes border each other
+(`app/game_data.py` does that at startup) and much too much to hand a browser
+just to draw an outline on a card.
+
+`scripts/export_gemeente_svgs.py` renders it down to one small SVG per
+gemeente:
+
+```bash
+python -m scripts.export_gemeente_svgs        # --dry-run to only see the report
+```
+
+That writes `frontend/img/gemeentes/<slug>.svg` - 60 files, ~160 KiB in total -
+plus an `index.json` listing every gemeente with its filename, viewBox size and
+the lon/lat box it came from. The SVGs are generated but committed, so a
+checkout and a deploy never have to run the script.
+
+Each shape is projected to metres, simplified, and fitted to its own viewBox,
+so a gemeente fills whatever box CSS gives it no matter how big it really is.
+Everything is one `<path>` with `fill-rule="evenodd"`, which covers the
+gemeentes made of several disjoint polygons (Kampen has 17, most of them
+islets in the IJsselmeer) and the two with a hole in them.
+
+The deck in the sidebar draws them: `js/gemeente-shapes.js` reads the index
+once at startup and hands `renderCardsPanel()` a URL per card, and the
+outline fills the card above its name. It's painted as a CSS `mask-image`
+rather than an `<img>` so the silhouette takes a colour from the stylesheet -
+the SVGs fill with `currentColor`, which an `<img>` has nothing to resolve
+against. Note that a relative `url()` inside a custom property resolves
+against the *stylesheet*, not the page, so `GemeenteShapes` hands out
+absolute URLs.
+
+A wild card isn't a place, so it wears a star (`img/wildcard.svg`) in the
+same slot. That one is hand-drawn rather than generated - there's nothing in
+the KML to derive it from - and `renderCardsPanel()` points at it through
+`CONFIG.WILDCARD_SHAPE_PATH`, the same way it points at an outline.
+
+Shapes are decoration - the card still names its gemeente - so if the index
+fails to load the deck falls back to name-only cards and logs a warning
+rather than taking the board down.
+
+`--tolerance` is how far a simplified outline may stray from the real one, in
+metres, and defaults to 20 - about a fifth of a pixel at the size a card draws
+a gemeente. That drops 94% of the points and moves the largest shape by 0.2%
+of its area, which is why the report prints how many points survived. Pass
+`--tolerance 0` to keep every point (2.4 MiB), or a larger number for
+something blockier.
+
+The script refuses to write anything if the KML and `GEMEENTES` in
+`app/game_data.py` disagree about which gemeentes exist, so the cards and the
+shapes can't silently drift apart.
 
 ## Next steps
 

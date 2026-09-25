@@ -136,9 +136,30 @@ function renderCardsPanel() {
       team_color = CONFIG.TEAM_COLORS[State.myTeamColor];
       button.setAttribute("style", `background-color: ${team_color}52;`);
     }
+    // The shape is what you recognise a card by at a glance; the name is
+    // underneath to settle the ones that look alike. A wild card isn't a
+    // place, so it wears a star instead of an outline; a gemeente whose
+    // outline didn't load has nothing to draw and falls back to name-only.
+    //
+    // Absolute for the same reason GemeenteShapes hands out absolute URLs:
+    // this lands in a CSS url() inside a custom property, and a relative one
+    // there is resolved against the stylesheet rather than against the page.
+    const shapeUrl = card.is_wild_card
+      ? new URL(CONFIG.WILDCARD_SHAPE_PATH, document.baseURI).href
+      : GemeenteShapes.urlFor(card.card_name);
+    const shape = shapeUrl ? '<span class="playing-card__shape"></span>' : "";
+
     button.innerHTML = `
+      ${shape}
       <span class="playing-card__name">${escapeHtml(card.card_name)}</span>
     `;
+
+    // Through the CSSOM rather than the markup above, so the URL needs no
+    // HTML escaping, and after the private-card branch, which assigns the
+    // whole style attribute and would otherwise drop this again.
+    if (shapeUrl) {
+      button.style.setProperty("--shape", `url("${shapeUrl}")`);
+    }
     button.addEventListener("click", () => Modal.showCardDetail(card));
     list.appendChild(button);
   }

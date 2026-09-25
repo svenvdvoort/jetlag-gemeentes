@@ -14,6 +14,16 @@ const CONFIG = {
   // filename, or update this path).
   KML_PATH: "data/CBS_2025_filtered_gemeenten.kml",
 
+  // Directory (trailing slash) holding one SVG outline per gemeente plus
+  // the index.json that maps gemeente name to filename. Both are generated
+  // from the KML above by scripts/export_gemeente_svgs.py - see the README.
+  GEMEENTE_SHAPES_PATH: "img/gemeentes/",
+
+  // The star a wild card wears in place of an outline. Wild cards aren't a
+  // place, so there's nothing in the KML to generate one from - this is a
+  // hand-drawn file rather than a generated one.
+  WILDCARD_SHAPE_PATH: "img/wildcard.svg",
+
   // Whether to render an actual basemap (OpenStreetMap tiles) behind the
   // gemeente polygons, or just a flat background color. Turning this off
   // avoids any tile requests entirely - useful if you'd rather keep the

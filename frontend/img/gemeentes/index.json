@@ -1,0 +1,786 @@
+{
+  "generated_from": "CBS_2025_filtered_gemeenten.kml",
+  "tolerance_m": 20.0,
+  "gemeentes": [
+    {
+      "name": "Aalten",
+      "file": "aalten.svg",
+      "width": 1000.0,
+      "height": 964.41,
+      "bounds": [
+        6.464335,
+        51.853823,
+        6.668733,
+        51.974368
+      ],
+      "points": 205
+    },
+    {
+      "name": "Almelo",
+      "file": "almelo.svg",
+      "width": 694.37,
+      "height": 1000.0,
+      "bounds": [
+        6.597705,
+        52.289974,
+        6.721168,
+        52.399123
+      ],
+      "points": 130
+    },
+    {
+      "name": "Apeldoorn",
+      "file": "apeldoorn.svg",
+      "width": 1000.0,
+      "height": 986.0,
+      "bounds": [
+        5.726389,
+        52.073339,
+        6.078484,
+        52.285669
+      ],
+      "points": 193
+    },
+    {
+      "name": "Arnhem",
+      "file": "arnhem.svg",
+      "width": 795.25,
+      "height": 1000.0,
+      "bounds": [
+        5.802961,
+        51.933464,
+        5.99034,
+        52.077891
+      ],
+      "points": 129
+    },
+    {
+      "name": "Barneveld",
+      "file": "barneveld.svg",
+      "width": 1000.0,
+      "height": 686.36,
+      "bounds": [
+        5.472433,
+        52.100482,
+        5.811932,
+        52.242503
+      ],
+      "points": 255
+    },
+    {
+      "name": "Berkelland",
+      "file": "berkelland.svg",
+      "width": 1000.0,
+      "height": 737.1,
+      "bounds": [
+        6.400539,
+        52.020601,
+        6.760572,
+        52.182488
+      ],
+      "points": 371
+    },
+    {
+      "name": "Borne",
+      "file": "borne.svg",
+      "width": 1000.0,
+      "height": 844.36,
+      "bounds": [
+        6.689481,
+        52.283113,
+        6.802136,
+        52.341208
+      ],
+      "points": 86
+    },
+    {
+      "name": "Bronckhorst",
+      "file": "bronckhorst.svg",
+      "width": 1000.0,
+      "height": 762.45,
+      "bounds": [
+        6.110813,
+        51.967979,
+        6.475773,
+        52.137712
+      ],
+      "points": 405
+    },
+    {
+      "name": "Brummen",
+      "file": "brummen.svg",
+      "width": 1000.0,
+      "height": 794.01,
+      "bounds": [
+        6.006085,
+        52.059181,
+        6.218381,
+        52.162059
+      ],
+      "points": 174
+    },
+    {
+      "name": "Dalfsen",
+      "file": "dalfsen.svg",
+      "width": 777.74,
+      "height": 1000.0,
+      "bounds": [
+        6.162495,
+        52.424441,
+        6.38415,
+        52.599171
+      ],
+      "points": 159
+    },
+    {
+      "name": "Deventer",
+      "file": "deventer.svg",
+      "width": 1000.0,
+      "height": 607.25,
+      "bounds": [
+        6.10132,
+        52.217438,
+        6.381912,
+        52.321122
+      ],
+      "points": 211
+    },
+    {
+      "name": "Dinkelland",
+      "file": "dinkelland.svg",
+      "width": 973.56,
+      "height": 1000.0,
+      "bounds": [
+        6.759035,
+        52.272962,
+        7.072205,
+        52.469767
+      ],
+      "points": 200
+    },
+    {
+      "name": "Doesburg",
+      "file": "doesburg.svg",
+      "width": 890.91,
+      "height": 1000.0,
+      "bounds": [
+        6.109591,
+        51.995566,
+        6.177299,
+        52.042113
+      ],
+      "points": 83
+    },
+    {
+      "name": "Doetinchem",
+      "file": "doetinchem.svg",
+      "width": 1000.0,
+      "height": 434.59,
+      "bounds": [
+        6.144688,
+        51.922782,
+        6.416082,
+        51.994261
+      ],
+      "points": 238
+    },
+    {
+      "name": "Duiven",
+      "file": "duiven.svg",
+      "width": 907.62,
+      "height": 1000.0,
+      "bounds": [
+        5.965775,
+        51.912334,
+        6.068852,
+        51.981859
+      ],
+      "points": 99
+    },
+    {
+      "name": "Ede",
+      "file": "ede.svg",
+      "width": 1000.0,
+      "height": 654.25,
+      "bounds": [
+        5.546745,
+        51.990951,
+        5.951466,
+        52.152228
+      ],
+      "points": 220
+    },
+    {
+      "name": "Elburg",
+      "file": "elburg.svg",
+      "width": 909.11,
+      "height": 1000.0,
+      "bounds": [
+        5.756912,
+        52.357873,
+        5.924339,
+        52.470614
+      ],
+      "points": 257
+    },
+    {
+      "name": "Enschede",
+      "file": "enschede.svg",
+      "width": 1000.0,
+      "height": 903.1,
+      "bounds": [
+        6.755893,
+        52.161206,
+        6.9811,
+        52.285506
+      ],
+      "points": 86
+    },
+    {
+      "name": "Epe",
+      "file": "epe.svg",
+      "width": 1000.0,
+      "height": 918.58,
+      "bounds": [
+        5.840831,
+        52.255807,
+        6.094857,
+        52.398437
+      ],
+      "points": 124
+    },
+    {
+      "name": "Ermelo",
+      "file": "ermelo.svg",
+      "width": 1000.0,
+      "height": 684.22,
+      "bounds": [
+        5.547867,
+        52.239325,
+        5.761449,
+        52.328382
+      ],
+      "points": 165
+    },
+    {
+      "name": "Haaksbergen",
+      "file": "haaksbergen.svg",
+      "width": 1000.0,
+      "height": 547.33,
+      "bounds": [
+        6.624347,
+        52.118069,
+        6.88975,
+        52.206331
+      ],
+      "points": 76
+    },
+    {
+      "name": "Hardenberg",
+      "file": "hardenberg.svg",
+      "width": 1000.0,
+      "height": 737.14,
+      "bounds": [
+        6.303064,
+        52.465603,
+        6.766694,
+        52.674049
+      ],
+      "points": 349
+    },
+    {
+      "name": "Harderwijk",
+      "file": "harderwijk.svg",
+      "width": 1000.0,
+      "height": 923.03,
+      "bounds": [
+        5.575754,
+        52.301492,
+        5.712848,
+        52.378841
+      ],
+      "points": 360
+    },
+    {
+      "name": "Hattem",
+      "file": "hattem.svg",
+      "width": 955.02,
+      "height": 1000.0,
+      "bounds": [
+        6.000788,
+        52.443766,
+        6.103546,
+        52.509606
+      ],
+      "points": 58
+    },
+    {
+      "name": "Heerde",
+      "file": "heerde.svg",
+      "width": 1000.0,
+      "height": 895.83,
+      "bounds": [
+        5.951005,
+        52.356512,
+        6.130553,
+        52.454806
+      ],
+      "points": 80
+    },
+    {
+      "name": "Hellendoorn",
+      "file": "hellendoorn.svg",
+      "width": 1000.0,
+      "height": 887.24,
+      "bounds": [
+        6.333502,
+        52.318219,
+        6.598148,
+        52.461702
+      ],
+      "points": 139
+    },
+    {
+      "name": "Hengelo",
+      "file": "hengelo.svg",
+      "width": 753.3,
+      "height": 1000.0,
+      "bounds": [
+        6.702039,
+        52.191065,
+        6.852527,
+        52.313586
+      ],
+      "points": 132
+    },
+    {
+      "name": "Hof van Twente",
+      "file": "hof-van-twente.svg",
+      "width": 1000.0,
+      "height": 708.86,
+      "bounds": [
+        6.416313,
+        52.163166,
+        6.75296,
+        52.308666
+      ],
+      "points": 223
+    },
+    {
+      "name": "Kampen",
+      "file": "kampen.svg",
+      "width": 1000.0,
+      "height": 967.11,
+      "bounds": [
+        5.777756,
+        52.474058,
+        6.033038,
+        52.625029
+      ],
+      "points": 798
+    },
+    {
+      "name": "Lochem",
+      "file": "lochem.svg",
+      "width": 1000.0,
+      "height": 723.28,
+      "bounds": [
+        6.156079,
+        52.096908,
+        6.494373,
+        52.246113
+      ],
+      "points": 367
+    },
+    {
+      "name": "Losser",
+      "file": "losser.svg",
+      "width": 535.91,
+      "height": 1000.0,
+      "bounds": [
+        6.934325,
+        52.220737,
+        7.072763,
+        52.37986
+      ],
+      "points": 119
+    },
+    {
+      "name": "Montferland",
+      "file": "montferland.svg",
+      "width": 1000.0,
+      "height": 762.16,
+      "bounds": [
+        6.089514,
+        51.867626,
+        6.332279,
+        51.980519
+      ],
+      "points": 207
+    },
+    {
+      "name": "Nijkerk",
+      "file": "nijkerk.svg",
+      "width": 1000.0,
+      "height": 664.22,
+      "bounds": [
+        5.39321,
+        52.165762,
+        5.634862,
+        52.263541
+      ],
+      "points": 272
+    },
+    {
+      "name": "Nunspeet",
+      "file": "nunspeet.svg",
+      "width": 885.38,
+      "height": 1000.0,
+      "bounds": [
+        5.678922,
+        52.267146,
+        5.880951,
+        52.406868
+      ],
+      "points": 215
+    },
+    {
+      "name": "Oldebroek",
+      "file": "oldebroek.svg",
+      "width": 913.98,
+      "height": 1000.0,
+      "bounds": [
+        5.841902,
+        52.391393,
+        6.036945,
+        52.522025
+      ],
+      "points": 139
+    },
+    {
+      "name": "Oldenzaal",
+      "file": "oldenzaal.svg",
+      "width": 1000.0,
+      "height": 926.42,
+      "bounds": [
+        6.859781,
+        52.282168,
+        6.950389,
+        52.33346
+      ],
+      "points": 90
+    },
+    {
+      "name": "Olst-Wijhe",
+      "file": "olst-wijhe.svg",
+      "width": 668.76,
+      "height": 1000.0,
+      "bounds": [
+        6.066083,
+        52.297627,
+        6.235843,
+        52.453541
+      ],
+      "points": 205
+    },
+    {
+      "name": "Ommen",
+      "file": "ommen.svg",
+      "width": 1000.0,
+      "height": 939.37,
+      "bounds": [
+        6.323413,
+        52.428145,
+        6.609644,
+        52.592584
+      ],
+      "points": 161
+    },
+    {
+      "name": "Oost Gelre",
+      "file": "oost-gelre.svg",
+      "width": 1000.0,
+      "height": 755.79,
+      "bounds": [
+        6.459187,
+        51.962547,
+        6.687981,
+        52.06804
+      ],
+      "points": 166
+    },
+    {
+      "name": "Oude IJsselstreek",
+      "file": "oude-ijsselstreek.svg",
+      "width": 985.42,
+      "height": 1000.0,
+      "bounds": [
+        6.289653,
+        51.827263,
+        6.532829,
+        51.978219
+      ],
+      "points": 337
+    },
+    {
+      "name": "Putten",
+      "file": "putten.svg",
+      "width": 1000.0,
+      "height": 700.86,
+      "bounds": [
+        5.474192,
+        52.202336,
+        5.683642,
+        52.291811
+      ],
+      "points": 202
+    },
+    {
+      "name": "Raalte",
+      "file": "raalte.svg",
+      "width": 919.09,
+      "height": 1000.0,
+      "bounds": [
+        6.144146,
+        52.300522,
+        6.40517,
+        52.474388
+      ],
+      "points": 161
+    },
+    {
+      "name": "Renkum",
+      "file": "renkum.svg",
+      "width": 1000.0,
+      "height": 679.53,
+      "bounds": [
+        5.713608,
+        51.958991,
+        5.87086,
+        52.024071
+      ],
+      "points": 108
+    },
+    {
+      "name": "Rheden",
+      "file": "rheden.svg",
+      "width": 999.16,
+      "height": 1000.0,
+      "bounds": [
+        5.951526,
+        51.974406,
+        6.137469,
+        52.088247
+      ],
+      "points": 138
+    },
+    {
+      "name": "Rijssen-Holten",
+      "file": "rijssen-holten.svg",
+      "width": 1000.0,
+      "height": 609.11,
+      "bounds": [
+        6.32653,
+        52.242146,
+        6.554009,
+        52.326462
+      ],
+      "points": 114
+    },
+    {
+      "name": "Rozendaal",
+      "file": "rozendaal.svg",
+      "width": 556.55,
+      "height": 1000.0,
+      "bounds": [
+        5.937099,
+        51.999638,
+        6.008993,
+        52.079164
+      ],
+      "points": 48
+    },
+    {
+      "name": "Scherpenzeel",
+      "file": "scherpenzeel.svg",
+      "width": 1000.0,
+      "height": 849.44,
+      "bounds": [
+        5.459243,
+        52.069619,
+        5.53916,
+        52.111097
+      ],
+      "points": 74
+    },
+    {
+      "name": "Staphorst",
+      "file": "staphorst.svg",
+      "width": 1000.0,
+      "height": 778.78,
+      "bounds": [
+        6.095917,
+        52.581246,
+        6.32929,
+        52.692183
+      ],
+      "points": 275
+    },
+    {
+      "name": "Steenwijkerland",
+      "file": "steenwijkerland.svg",
+      "width": 1000.0,
+      "height": 857.07,
+      "bounds": [
+        5.795177,
+        52.641363,
+        6.201731,
+        52.854215
+      ],
+      "points": 269
+    },
+    {
+      "name": "Tubbergen",
+      "file": "tubbergen.svg",
+      "width": 1000.0,
+      "height": 869.29,
+      "bounds": [
+        6.669672,
+        52.329665,
+        6.949224,
+        52.478132
+      ],
+      "points": 110
+    },
+    {
+      "name": "Twenterand",
+      "file": "twenterand.svg",
+      "width": 1000.0,
+      "height": 676.24,
+      "bounds": [
+        6.44745,
+        52.383628,
+        6.717707,
+        52.494981
+      ],
+      "points": 221
+    },
+    {
+      "name": "Voorst",
+      "file": "voorst.svg",
+      "width": 558.15,
+      "height": 1000.0,
+      "bounds": [
+        6.024801,
+        52.143938,
+        6.19437,
+        52.330907
+      ],
+      "points": 245
+    },
+    {
+      "name": "Wageningen",
+      "file": "wageningen.svg",
+      "width": 1000.0,
+      "height": 887.82,
+      "bounds": [
+        5.605824,
+        51.936405,
+        5.724363,
+        52.000708
+      ],
+      "points": 97
+    },
+    {
+      "name": "Westervoort",
+      "file": "westervoort.svg",
+      "width": 785.57,
+      "height": 1000.0,
+      "bounds": [
+        5.949249,
+        51.938675,
+        6.003188,
+        51.98065
+      ],
+      "points": 46
+    },
+    {
+      "name": "Wierden",
+      "file": "wierden.svg",
+      "width": 676.92,
+      "height": 1000.0,
+      "bounds": [
+        6.468189,
+        52.269116,
+        6.631782,
+        52.417513
+      ],
+      "points": 104
+    },
+    {
+      "name": "Winterswijk",
+      "file": "winterswijk.svg",
+      "width": 866.27,
+      "height": 1000.0,
+      "bounds": [
+        6.629071,
+        51.896063,
+        6.832802,
+        52.040065
+      ],
+      "points": 137
+    },
+    {
+      "name": "Zevenaar",
+      "file": "zevenaar.svg",
+      "width": 637.74,
+      "height": 1000.0,
+      "bounds": [
+        5.987063,
+        51.840722,
+        6.167913,
+        52.015024
+      ],
+      "points": 242
+    },
+    {
+      "name": "Zutphen",
+      "file": "zutphen.svg",
+      "width": 1000.0,
+      "height": 707.59,
+      "bounds": [
+        6.140387,
+        52.088733,
+        6.328314,
+        52.169801
+      ],
+      "points": 159
+    },
+    {
+      "name": "Zwartewaterland",
+      "file": "zwartewaterland.svg",
+      "width": 1000.0,
+      "height": 971.2,
+      "bounds": [
+        5.971341,
+        52.551841,
+        6.166814,
+        52.667937
+      ],
+      "points": 192
+    },
+    {
+      "name": "Zwolle",
+      "file": "zwolle.svg",
+      "width": 860.87,
+      "height": 1000.0,
+      "bounds": [
+        6.003619,
+        52.440531,
+        6.210811,
+        52.58794
+      ],
+      "points": 186
+    }
+  ]
+}

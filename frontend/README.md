@@ -60,11 +60,13 @@ jetlag-frontend/
 ├── data/
 │   ├── gemeentes.sample.kml    # replace with your real export
 │   └── fonts/                  # glyphs for the map labels (see its README)
+├── img/gemeentes/              # generated: one SVG outline per gemeente + index.json
 └── js/
     ├── config.js       # all tunables: API URL, colors, basemap toggle, gemeente list
     ├── api.js          # fetch wrappers for the backend endpoints
     ├── join.js         # join page: game/team pickers (loads only config.js + api.js)
     ├── kml-parser.js   # KML -> GeoJSON, using the browser's DOMParser
+    ├── gemeente-shapes.js  # gemeente name -> its SVG outline, from img/gemeentes/index.json
     ├── state.js        # single source of truth + derived views (panel cards, scores, ...)
     ├── map-view.js      # MapLibre map, GeoJSON source, per-feature styling
     ├── ui.js            # cards panel, score bar, claim/discard modal, toasts
