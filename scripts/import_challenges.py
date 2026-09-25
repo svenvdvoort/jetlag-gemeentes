@@ -30,6 +30,7 @@ DEFAULT_OUT = REPO_ROOT / "app" / "challenges.py"
 
 # Header labels we need. The name column itself is unlabeled in the sheet.
 TITLE_HEADER = "Challenge title"
+LINK_HEADER = "Challenge links"
 DESCRIPTION_HEADER = "Challenge description"
 
 # The card name sits in the first column, which has no header text.
@@ -70,13 +71,15 @@ def parse(csv_path: Path) -> Tuple[Dict[str, Challenge], List[str]]:
         rows = list(csv.reader(handle))
 
     header_number, labels = _find_header(rows)
-    if TITLE_HEADER not in labels:
-        raise SheetError(
-            f"The header row (row {header_number + 1}) has no {TITLE_HEADER!r} column; "
-            f"found {sorted(labels)}."
-        )
+    for header in (TITLE_HEADER, LINK_HEADER):
+        if header not in labels:
+            raise SheetError(
+                f"The header row (row {header_number + 1}) has no {header!r} column; "
+                f"found {sorted(labels)}."
+            )
 
     title_column = labels[TITLE_HEADER]
+    link_column = labels[LINK_HEADER]
     description_column = labels[DESCRIPTION_HEADER]
 
     # Text typed one cell too far right lands in the unlabeled column next to
@@ -110,7 +113,11 @@ def parse(csv_path: Path) -> Tuple[Dict[str, Challenge], List[str]]:
             if description:
                 overflowed.append(name)
 
-        challenges[name] = Challenge(title=_cell(row, title_column), description=description)
+        challenges[name] = Challenge(
+            title=_cell(row, title_column),
+            description=description,
+            link=_cell(row, link_column),
+        )
 
     missing = [name for name in DECK if name not in challenges]
     if missing:
@@ -129,8 +136,8 @@ def render(challenges: Dict[str, Challenge], csv_name: str) -> str:
         "",
         "Do not edit by hand - run `python -m scripts.import_challenges` instead.",
         "Cards are in deck order (GEMEENTES, then WILD_CARDS) and every card in",
-        "the deck has an entry, so an empty title or description means the sheet",
-        "itself is still empty there.",
+        "the deck has an entry, so an empty title, description or link means the",
+        "sheet itself is still empty there.",
         '"""',
         "",
         "from typing import Dict",
@@ -145,6 +152,7 @@ def render(challenges: Dict[str, Challenge], csv_name: str) -> str:
         lines.append(f"    {name!r}: Challenge(")
         lines.append(f"        title={challenge.title!r},")
         lines.append(f"        description={challenge.description!r},")
+        lines.append(f"        link={challenge.link!r},")
         lines.append("    ),")
 
     lines.append("}")
@@ -154,9 +162,13 @@ def render(challenges: Dict[str, Challenge], csv_name: str) -> str:
 def report(challenges: Dict[str, Challenge], overflowed: List[str]) -> None:
     described = [name for name, c in challenges.items() if c.description]
     titled = [name for name, c in challenges.items() if c.title]
+    linked = [name for name, c in challenges.items() if c.link]
     empty = [name for name, c in challenges.items() if not c.description]
 
-    print(f"{len(challenges)} cards, {len(described)} with a description, {len(titled)} with a title.")
+    print(
+        f"{len(challenges)} cards, {len(described)} with a description, "
+        f"{len(titled)} with a title, {len(linked)} with a link."
+    )
     if empty:
         print(f"\nNo description yet ({len(empty)}):")
         for name in empty:

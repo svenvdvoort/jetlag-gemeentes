@@ -41,7 +41,7 @@ Composite primary key: `(game_id, card_id)`.
 | card_state            | enum `CardState`      | InDeck / OnPublicBoard / OnPrivateBoard / Claimed |
 | challenge_title       | str                   |                                                   |
 | challenge_description | str                   |                                                   |
-| challenge_link        | str, optional         | shown as a link under the description             |
+| challenge_link        | str, optional         | from the sheet; shown as a link under the text    |
 | visible_from          | datetime, optional    |                                                   |
 | private_board_team    | str, optional         |                                                   |
 | claimed_team          | str, optional         |                                                   |
@@ -258,8 +258,8 @@ jetlag-api/
 ## Importing challenges
 
 `challenges.csv` - a Google Sheets export - is the source of truth for the
-challenge title and description of every card. It is gitignored and lives
-only on whoever's machine exported it: `app/challenges.py` is generated
+challenge title, description and link of every card. It is gitignored and
+lives only on whoever's machine exported it: `app/challenges.py` is generated
 from it and committed, so the app never needs the CSV at all, at runtime
 or in a checkout.
 
@@ -269,16 +269,21 @@ After re-exporting the sheet into the repo root, regenerate the module:
 python -m scripts.import_challenges            # --dry-run to only see the report
 ```
 
-It prints how many cards have text, which ones are still empty, and which
-took their description from the column next to `Challenge description`
-(someone typed one cell too far right - worth fixing in the sheet). It
-refuses to write anything if a card name in the sheet isn't in `GEMEENTES`
-or `WILD_CARDS`, or if a card in the deck has no row, so the deck and the
-sheet can't silently drift apart. Columns are matched by their header text
-rather than position, so inserting a column in the sheet is safe.
+It prints how many cards have text or a link, which ones are still empty,
+and which took their description from the column next to
+`Challenge description` (someone typed one cell too far right - worth
+fixing in the sheet). It refuses to write anything if a card name in the
+sheet isn't in `GEMEENTES` or `WILD_CARDS`, if a card in the deck has no
+row, or if the `Challenge title` or `Challenge links` column is missing,
+so the deck and the sheet can't silently drift apart. Columns are matched
+by their header text rather than position, so inserting a column in the
+sheet is safe.
 
-Cards whose challenge hasn't been written yet seed with empty text, which
-the frontend renders as a card with no description.
+The `Challenge links` column is a card's optional reference URL, kept out
+of the description so the frontend can render it as a link; a card with an
+empty cell there seeds `challenge_link` as `NULL`. Cards whose challenge
+hasn't been written yet seed with empty text, which the frontend renders as
+a card with no description.
 
 ## Next steps
 

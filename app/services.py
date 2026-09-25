@@ -240,7 +240,7 @@ def create_game(session: Session, game_id: str, teams: List[TeamCreate]) -> Game
                 card_state=CardState.IN_DECK,
                 challenge_title=challenge.title,
                 challenge_description=challenge.description,
-                challenge_link="https://www.youtube.com/watch?v=JVQmWZoNHG4",
+                challenge_link=challenge.link or None,
                 is_wild_card=False,
             ))
             card_id += 1
@@ -253,6 +253,7 @@ def create_game(session: Session, game_id: str, teams: List[TeamCreate]) -> Game
                 card_state=CardState.IN_DECK,
                 challenge_title=challenge.title,
                 challenge_description=challenge.description,
+                challenge_link=challenge.link or None,
                 is_wild_card=True,
             ))
             card_id += 1

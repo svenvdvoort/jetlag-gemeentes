@@ -17,15 +17,16 @@ from typing import Dict, Iterator, List, NamedTuple, Set, Tuple
 
 
 class Challenge(NamedTuple):
-    """The challenge text on a card. Either field may be empty."""
+    """The challenge text on a card. Any field may be empty."""
 
     title: str
     description: str
+    link: str
 
 
 # Used for any card that has no entry in CHALLENGES, so a stale generated
 # file yields a blank card instead of breaking game creation.
-EMPTY_CHALLENGE = Challenge(title="", description="")
+EMPTY_CHALLENGE = Challenge(title="", description="", link="")
 
 GEMEENTES = [
     "Aalten",
