@@ -73,8 +73,9 @@ normal response, not a 404.
 
 Creates a game: registers teams, seeds the full deck (all gemeentes +
 wild cards, `InDeck`, each with its challenge text from
-[Importing challenges](#importing-challenges)), deals 4 random cards to
-each team's private board, and reveals 7 random cards on the public board.
+[Importing challenges](#importing-challenges)), deals 4 random cards to each
+team's private board, and reveals 7 random cards on the public board.
+Driven by the frontend's create page (`frontend/create.html`).
 
 Body:
 
@@ -82,7 +83,7 @@ Body:
 {
   "teams": [
     { "team_color": "orange", "team_name": "Team Oranje" },
-    { "team_color": "blue", "team_name": "Team Blauw" },
+    { "team_color": "pink", "team_name": "Team Roze" },
     { "team_color": "purple", "team_name": "Team Paars" }
   ]
 }
@@ -100,7 +101,7 @@ Returns every team registered in the game (`team_color`, `team_name`,
 `can_discard_card`) - added for the frontend's score bar and to know
 when a team is currently allowed to discard. There's no per-team
 filtering: any client can see the full roster, which is also how a team
-finds out that *another* team is discarding and the game is frozen.
+finds out that _another_ team is discarding and the game is frozen.
 
 ### `GET /{game_id}/{team_color}/cards`
 

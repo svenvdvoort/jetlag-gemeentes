@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1"
+    />
+    <title>New game - Gemeentejacht</title>
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <main class="join">
+      <img
+        class="join__logo"
+        src="img/jetlag.png"
+        alt="Jetlag"
+        width="463"
+        height="149"
+      />
+      <h1 class="join__title">New game</h1>
+      <p class="join__subtitle">
+        Pick a code and set up the teams. Everyone joins with the code.
+      </p>
+
+      <div id="create-error" class="modal-error" hidden></div>
+
+      <div class="modal-field">
+        <label for="create-game">Game code</label>
+        <input
+          id="create-game"
+          type="text"
+          autocapitalize="characters"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <p class="join__hint">Letters and numbers only, no spaces.</p>
+      </div>
+
+      <div class="modal-field" role="group" aria-labelledby="create-team-label">
+        <span id="create-team-label" class="join__label">Teams</span>
+        <div id="create-teams"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="create-add-team" type="button" class="btn btn--ghost">
+          + Add team
+        </button>
+        <button id="create-btn" type="button" class="btn btn--primary" disabled>
+          Create game
+        </button>
+      </div>
+
+      <p class="join__footer">
+        Joining an existing game?
+        <a class="join__link" href="/">Open the join page</a>.
+      </p>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/create.js"></script>
+  </body>
+</html>

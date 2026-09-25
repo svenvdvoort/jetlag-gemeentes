@@ -117,3 +117,34 @@ function getGameId() {
 function getMyTeamColor() {
   return new URLSearchParams(window.location.search).get("team");
 }
+
+// ---------------------------------------------------------------------
+// Remembered pick
+// ---------------------------------------------------------------------
+// The last game + team the user picked, so returning players don't have
+// to hunt for their game again. Only ever used to pre-select the join
+// form, never to skip it - switching teams mid-game has to stay
+// possible. Shared because the create page writes the entry too: after
+// creating a game it sends you to the join page, which should already
+// have that game selected.
+const LAST_JOIN_KEY = "gemeentejacht:last-join";
+
+/** Storage throws in Safari private mode, so both helpers are best-effort. */
+function readRemembered() {
+  try {
+    return JSON.parse(window.localStorage.getItem(LAST_JOIN_KEY)) || {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function writeRemembered(gameId, teamColor) {
+  try {
+    window.localStorage.setItem(
+      LAST_JOIN_KEY,
+      JSON.stringify({ game: gameId, team: teamColor })
+    );
+  } catch (_) {
+    // Not being able to remember the pick isn't worth interrupting the join.
+  }
+}

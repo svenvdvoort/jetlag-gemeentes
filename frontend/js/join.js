@@ -7,11 +7,6 @@
  * needed here either.
  */
 
-// Remembers the last pick so returning players don't have to hunt for
-// their game again. Only ever used to pre-select the form, never to skip
-// it - switching teams mid-game has to stay possible.
-const STORAGE_KEY = "gemeentejacht:last-join";
-
 // The game whose teams are currently being fetched. A slow response must
 // not paint over a game the user has since switched away from.
 let pendingTeamsFor = null;
@@ -36,9 +31,7 @@ async function initJoin() {
 
   if (games.length === 0) {
     gameSelect.replaceChildren(makeOption("", "No games yet"));
-    showJoinError(
-      "No games yet. Create one with POST /{game_id}/create, then reload this page."
-    );
+    showJoinError("No games yet. Create one to get started.");
     return;
   }
 
@@ -160,7 +153,7 @@ function makeTeamButton(team) {
 }
 
 // ---------------------------------------------------------------------
-// Error banner + remembered pick
+// Error banner
 // ---------------------------------------------------------------------
 
 function showJoinError(message) {
@@ -171,26 +164,6 @@ function showJoinError(message) {
 
 function hideJoinError() {
   document.getElementById("join-error").hidden = true;
-}
-
-/** Storage throws in Safari private mode, so both helpers are best-effort. */
-function readRemembered() {
-  try {
-    return JSON.parse(window.localStorage.getItem(STORAGE_KEY)) || {};
-  } catch (_) {
-    return {};
-  }
-}
-
-function writeRemembered(gameId, teamColor) {
-  try {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ game: gameId, team: teamColor })
-    );
-  } catch (_) {
-    // Not being able to remember the pick isn't worth interrupting the join.
-  }
 }
 
 document.addEventListener("DOMContentLoaded", initJoin);

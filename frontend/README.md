@@ -35,8 +35,8 @@ request same-origin.
    uvicorn app.main:app --reload
    ```
 3. Open `http://localhost:8000/` and pick a game and a team. You need at
-   least one game to exist - create one with
-   `POST /{game_id}/create` if the list is empty.
+   least one game to exist. If the list is empty, follow the create link
+   at the bottom of the page.
 
 ## Pages
 
@@ -45,6 +45,13 @@ request same-origin.
   to the board. It pre-fills your last pick from `localStorage` but never
   skips itself, so switching teams stays possible. Links that still point
   at `/?game=…&team=…` are redirected to the board.
+- **`create.html`** - the create page. A game code plus one row per team
+  (colour + name, two to five of them), posted to
+  `POST /{game_id}/create`. The button stays disabled until the form
+  would actually be accepted, so the only errors that surface are the
+  server's - chiefly a code that's already taken. On success it writes
+  the new game into the same `localStorage` entry the join page reads and
+  sends you there, so the game is already selected when you arrive.
 - **`board.html`** - the map board, opened as
   `board.html?game=<GAME_ID>&team=<TEAM_COLOR>`. Without both parameters
   it redirects back to the join page. There's no login flow, so the game
@@ -55,6 +62,7 @@ request same-origin.
 ```
 jetlag-frontend/
 ├── index.html                  # join page: pick a game + team
+├── create.html                 # create page: new game + its teams
 ├── board.html                  # the map board
 ├── css/styles.css
 ├── data/
@@ -64,6 +72,7 @@ jetlag-frontend/
     ├── config.js       # all tunables: API URL, colors, basemap toggle, gemeente list
     ├── api.js          # fetch wrappers for the backend endpoints
     ├── join.js         # join page: game/team pickers (loads only config.js + api.js)
+    ├── create.js       # create page: game code + team rows (loads only config.js + api.js)
     ├── kml-parser.js   # KML -> GeoJSON, using the browser's DOMParser
     ├── state.js        # single source of truth + derived views (panel cards, scores, ...)
     ├── map-view.js      # MapLibre map, GeoJSON source, per-feature styling

@@ -496,7 +496,8 @@ button {
   margin-bottom: 0.3rem;
 }
 
-.modal-field select {
+.modal-field select,
+.modal-field input[type="text"] {
   width: 100%;
   padding: 0.55rem;
   border-radius: var(--radius-md);
@@ -504,6 +505,10 @@ button {
   font-size: 0.95rem;
   background: var(--paper);
   color: var(--ink);
+}
+
+.modal-field input[type="text"] {
+  font-family: inherit;
 }
 
 .modal-actions {
@@ -914,6 +919,60 @@ button {
   height: 10px;
   border-radius: 50%;
   flex: 0 0 auto;
+}
+
+/* Both standalone pages close with a link to the other one, so this pair
+   is shared rather than per-page. */
+.join__footer {
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+  text-align: center;
+  margin: 1.2rem 0 0;
+}
+
+.join__link {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------ */
+/* Create page (create.html)                                            */
+/* ------------------------------------------------------------------ */
+/* Reuses the .join page shell plus .modal-field, .modal-error and
+   .modal-actions - one row per team is the only new layout, and the
+   colour swatch is the join page's .join-team__dot again. */
+.create-team {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+/* Both of these carry the .modal-field `width: 100%`, which outranks
+   anything this block could say about width - a single class can't beat
+   `.modal-field input[type="text"]`. Hence explicit, non-`auto` flex
+   bases: flex-basis wins over width for a flex item's main size, so the
+   inherited full width stops mattering either way.
+
+   Wide enough for "purple" without crowding the name beside it. */
+.create-team__color {
+  flex: 0 0 7.5rem;
+}
+
+/* Takes whatever the swatch, the colour select and the remove button
+   leave, and min-width:0 lets it shrink past its content on a narrow
+   screen rather than pushing that button past the edge. */
+.create-team__name {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Squarer than .btn--small, since it holds a single glyph. */
+.create-team__remove {
+  padding: 0.45rem 0.6rem;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--ink-muted);
 }
 
 /* ------------------------------------------------------------------ */
