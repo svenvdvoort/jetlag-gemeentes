@@ -126,19 +126,11 @@ const State = {
     return Boolean(this.pendingDiscardTeam());
   },
 
-  /** Names of gemeentes claimed by anyone - always complete, since Claimed cards are visible to every team. */
-  claimedGemeenteNames() {
-    return new Set(
-      this.cards
-        .filter((c) => c.card_state === "Claimed" && !c.is_wild_card)
-        .map((c) => c.card_name),
-    );
-  },
-
   /** Unclaimed regular gemeentes, for the wild-card target dropdown. */
   unclaimedGemeentes() {
-    const claimed = this.claimedGemeenteNames();
-    return CONFIG.GEMEENTES.filter((name) => !claimed.has(name));
+    return this.cards
+      .filter((c) => c.card_state !== "Claimed" && !c.is_wild_card)
+      .map((c) => c.card_name)
   },
 
   /**

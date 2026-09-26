@@ -30,7 +30,7 @@ from app.services import (
     create_game,
     discard_card,
     get_team_or_raise,
-    get_visible_cards,
+    get_cards_for_team,
     list_games,
     list_teams,
 )
@@ -118,7 +118,7 @@ def get_cards_endpoint(
         get_team_or_raise(session, game_id, team_color)
     except GameNotFoundError as exc:
         _raise_as_http(exc)
-    return get_visible_cards(session, game_id, team_color)
+    return get_cards_for_team(session, game_id, team_color)
 
 
 @router.put(

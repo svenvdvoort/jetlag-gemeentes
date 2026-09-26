@@ -178,17 +178,6 @@ refusal puts the waiting screen up rather than an error message.
 
 ## Known limitations / things worth revisiting
 
-- **The `GEMEENTES` list in `js/config.js` duplicates
-  `app/game_data.py`** in the backend. The wild-card claim flow needs to
-  offer _every_ unclaimed gemeente as a target, including ones this team
-  has never seen a `Card` object for (still `InDeck`, or on another
-  team's unrevealed private board) - so it can't rely on data the API
-  has actually sent. Instead it recomputes the same `card_id` the
-  backend would have assigned (`index + 1` in that list) and trusts that
-  the two lists stay in sync. If they ever drift, wild-card claims will
-  target the wrong card. The clean fix is a small backend endpoint that
-  returns "all card names + ids" directly; worth adding once this proves
-  out.
 - **No team roster caching**: `GET /{game_id}/teams` is re-fetched on
   every refresh alongside cards. Teams rarely change mid-game, so this
   is deliberate simplicity over a micro-optimization, not an oversight.

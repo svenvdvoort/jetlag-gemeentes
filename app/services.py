@@ -92,7 +92,7 @@ def draw_random_cards(session: Session, game_id: str, state: CardState, count: i
 # Visibility rule (shared by GET /cards and the claim endpoint)
 # --------------------------------------------------------------------------
 
-def card_visible_to_team(card: Card, team_color: TeamColor, now: Optional[datetime] = None) -> bool:
+def card_on_board_for_team(card: Card, team_color: TeamColor, now: Optional[datetime] = None) -> bool:
     """
     A card is visible to `team_color` if:
       - it has already been claimed (by anyone), or
@@ -101,20 +101,37 @@ def card_visible_to_team(card: Card, team_color: TeamColor, now: Optional[dateti
     """
     now = now or datetime.utcnow()
 
-    if card.card_state == CardState.CLAIMED:
-        return True
     if card.card_state == CardState.ON_PUBLIC_BOARD:
         return True
-    if card.card_state == CardState.ON_PRIVATE_BOARD and card.private_board_team == team_color.value:
-        return card.visible_from is not None and card.visible_from <= now
+    if card.card_state == CardState.ON_PRIVATE_BOARD and \
+       card.private_board_team == team_color.value and \
+       card.visible_from is not None and \
+       card.visible_from <= now:
+        return True
     return False
 
 
-def get_visible_cards(session: Session, game_id: str, team_color: TeamColor) -> List[Card]:
-    """All cards currently visible to `team_color`, per card_visible_to_team."""
+def get_cards_for_team(session: Session, game_id: str, team_color: TeamColor) -> List[Card]:
+    """
+    All cards as they are visible to this team.
+    Accounts for private cards of other teams.
+    """
     now = datetime.utcnow()
     all_cards = session.exec(_current_cards(game_id)).all()
-    return [c for c in all_cards if card_visible_to_team(c, team_color, now)]
+    for card in all_cards:
+        card.updated_timestamp = now
+        if card.card_state == CardState.ON_PRIVATE_BOARD:
+            if card.private_board_team == team_color and card.visible_from > now:
+                card.card_state = CardState.IN_DECK
+                card.private_board_team = None
+                card.visible_from = None
+            if card.private_board_team != team_color:
+                card.card_state = CardState.IN_DECK
+                card.private_board_team = None
+                card.visible_from = None
+    # Sort card by gemeente naam before returning to web client
+    all_cards = sorted(all_cards, key=lambda card: card.card_name)
+    return all_cards
 
 
 # --------------------------------------------------------------------------
@@ -180,6 +197,13 @@ def get_card_or_raise(session: Session, game_id: str, card_id: int) -> Card:
 
 
 def _current_cards(game_id: str, when: Optional[datetime] = None):
+    """
+    Returns query for the current state of all cards in the game.
+    This is where we account for the 'ledger'-style updates we do
+    in the Cards database table; instead of overwriting the state
+    of a card on an update, we append a new record to the table
+    with the new state and a more recent timestamp.
+    """
     latest_versions = (
         select(
             Card.game_id.label("game_id"),
@@ -363,7 +387,12 @@ def claim_card(
                 f"The game is frozen until team {pending_team.team_color.value} discards a card!"
             )
 
-    if not card_visible_to_team(card, team_color):
+    if card.card_state == CardState.CLAIMED:
+        raise InvalidActionError(
+            f"Card {card_id} has already been claimed!"
+        )
+
+    if not card_on_board_for_team(card, team_color):
         raise CardNotVisibleError(f"Card {card_id} is not visible to team '{team_color.value}'.")
 
     try:

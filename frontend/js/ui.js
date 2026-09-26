@@ -529,7 +529,7 @@ async function performClaim(card, targetName, triggerBtn) {
   triggerBtn.disabled = true;
   triggerBtn.textContent = "Claiming...";
   try {
-    const targetId = card.is_wild_card ? gemeenteCardId(targetName) : null;
+    const targetId = card.is_wild_card ? State.cardByName(targetName).card_id : null;
     const newCards = await Api.claimCard(
       State.gameId,
       State.myTeamColor,

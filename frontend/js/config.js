@@ -78,37 +78,7 @@ const CONFIG = {
     neighbourOpacity: 0.28,
     neighbourStrokeWidth: 3.5,
   },
-
-  // IMPORTANT - this must list every gemeente in EXACTLY the same order
-  // as GEMEENTES in the backend's app/game_data.py. The backend assigns
-  // card_id as (index + 1) in that list when it seeds a new game, and
-  // that id is never sent to us for gemeentes we can't yet see (e.g.
-  // still InDeck, or on another team's unrevealed private board). We
-  // need it anyway to let a wild-card claim target an unseen gemeente,
-  // so we recompute the same id locally instead. If the two lists ever
-  // drift apart, wild-card claims will target the wrong card - worth
-  // eventually replacing with a small backend endpoint that hands back
-  // "all card names + ids" directly instead of duplicating this list.
-  GEMEENTES: [
-    "Aalten", "Almelo", "Apeldoorn", "Arnhem", "Barneveld", "Berkelland",
-    "Borne", "Bronckhorst", "Brummen", "Dalfsen", "Deventer", "Dinkelland",
-    "Doesburg", "Doetinchem", "Duiven", "Ede", "Elburg", "Enschede", "Epe",
-    "Ermelo", "Haaksbergen", "Hardenberg", "Harderwijk", "Hattem", "Heerde",
-    "Hellendoorn", "Hengelo", "Hof van Twente", "Kampen", "Lochem", "Losser",
-    "Montferland", "Nijkerk", "Nunspeet", "Oldebroek", "Oldenzaal",
-    "Olst-Wijhe", "Ommen", "Oost Gelre", "Oude IJsselstreek", "Putten",
-    "Raalte", "Renkum", "Rheden", "Rijssen-Holten", "Rozendaal",
-    "Scherpenzeel", "Staphorst", "Steenwijkerland", "Tubbergen",
-    "Twenterand", "Voorst", "Wageningen", "Westervoort", "Wierden",
-    "Winterswijk", "Zevenaar", "Zutphen", "Zwartewaterland", "Zwolle",
-  ],
 };
-
-/** Card id the backend would have assigned this gemeente at seed time. */
-function gemeenteCardId(name) {
-  const index = CONFIG.GEMEENTES.indexOf(name);
-  return index === -1 ? null : index + 1;
-}
 
 function getGameId() {
   return new URLSearchParams(window.location.search).get("game");
