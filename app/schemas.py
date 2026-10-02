@@ -10,6 +10,7 @@ Team is the exception: its row carries the team's token, so it is never
 returned as-is. TeamPublic below is what the API hands out instead.
 """
 
+from datetime import datetime
 from typing import List
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -91,3 +92,23 @@ class GameSummary(BaseModel):
 
     game_id: str
     team_count: int
+
+
+class GameStatus(BaseModel):
+    """
+    Body of GET /{game_id}/status - whether the game is on yet.
+
+    Both datetimes are sent as timezone-aware UTC (the database stores
+    naive UTC; app.services attaches the zone on the way out), because a
+    timestamp without an offset is read as *local* time by JavaScript's
+    Date, which would put the countdown hours off for no visible reason.
+
+    `server_time` is in here so the countdown can run off the clock that
+    actually decides when the game starts rather than off the phone's,
+    which may be minutes out.
+    """
+
+    game_id: str
+    starts_at: datetime
+    started: bool
+    server_time: datetime

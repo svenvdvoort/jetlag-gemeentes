@@ -24,6 +24,32 @@
     <!-- Shown instead of the app if setup/loading fails. -->
     <div id="fatal-error" class="fatal-error" hidden></div>
 
+    <!-- The board before kickoff. Creating the game already dealt every
+         board, but the server hands out nothing until the game starts, so
+         there is nothing here to draw yet. Takes the app's place rather
+         than covering it: a MapLibre map initialised inside a hidden
+         container comes up sized 0x0 and stays that way. -->
+    <main id="pregame" class="join pregame" hidden>
+      <img
+        class="join__logo"
+        src="img/jetlag.png"
+        alt="Jetlag"
+        width="463"
+        height="149"
+      />
+      <p class="pregame__eyebrow">Not started yet</p>
+      <h1 class="join__title">
+        The game starts at <span id="pregame-time">10:00</span>
+      </h1>
+      <p id="pregame-countdown" class="pregame__countdown">-:--:--</p>
+      <p class="join__subtitle">
+        The map, the public board and your own cards all stay hidden until
+        then. Leave this page open - it opens the board by itself the
+        moment the game starts.
+      </p>
+      <p id="pregame-meta" class="join__footer"></p>
+    </main>
+
     <div id="app" class="app">
       <header class="topbar">
         <div class="topbar__brand">

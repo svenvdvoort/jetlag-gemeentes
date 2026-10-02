@@ -151,11 +151,23 @@ Body:
 Rules: more than 1 team, team colors unique within the game, `game_id`
 must not already exist.
 
+Each team's 4 private cards get staggered reveal times, Amsterdam time,
+on the day the game was created: 2 cards at kickoff (10:00), 1 at 12:00,
+1 at 14:00. The two later ones sit face down on the team's board until
+their time comes (see [the cards endpoint](#get-game_idteam_colorcards)).
+
+Creating a game deals every board straight away even when that happens the
+evening before - nothing is handed out to anyone until the game starts, see
+[The 10:00 kickoff](#the-1000-kickoff).
+
 The response carries a freshly generated token per team, under `teams`:
 
 ```json
 {
   "game_id": "ABC123",
+  "starts_at": "2026-09-28T08:00:00Z",
+  "started": false,
+  "server_time": "2026-09-27T21:14:05.113Z",
   "teams_created": 2,
   "cards_seeded": 66,
   "cards_on_public_board": 7,
@@ -165,6 +177,15 @@ The response carries a freshly generated token per team, under `teams`:
   ]
 }
 ```
+
+Whether the game has started yet and the instant it does - all the
+frontend needs to decide between the board and a countdown (see
+[The 10:00 kickoff](#the-1000-kickoff)). `404` for a game that doesn't
+exist. Both timestamps carry an explicit UTC offset, unlike the naive
+ones on a card: JavaScript's `Date` reads a timestamp without one as
+_local_ time, which would put that countdown hours out. `server_time` is
+in there so it can run off the clock that actually decides when the game
+starts rather than off the phone's.
 
 This is the only response that ever contains a token - see
 [Authentication](#authentication).
@@ -207,17 +228,32 @@ shortcut. A `401` here is a normal answer, not an error.
 
 **Needs that team's cookie** (`401` without it).
 
-Returns all cards currently visible to `team_color`: claimed cards (any
-team), public-board cards, and that team's private-board cards whose
-`visible_from` has passed. Shared visibility logic lives in
-`app/services.py::card_visible_to_team`.
+Returns the whole deck as `team_color` sees it: claimed cards (any team),
+public-board cards, and that team's own private-board cards whose
+`visible_from` has passed. Another team's private cards come back as a
+plain `InDeck` row with no team, reveal time or claim on it, and before
+kickoff so does every card in the game (see
+[The 10:00 kickoff](#the-1000-kickoff)). The claim endpoint checks the same
+rule, through `app/services.py::card_on_board_for_team`.
+
+A team's *own* private cards that aren't due yet are the one case in
+between: they come back **face down** (`_redact_as_face_down`) - still
+`OnPrivateBoard`, still theirs, still carrying the `visible_from` they
+open at, but with the name, the challenge text and the card id taken off.
+The team gets to see that a card is coming and when, not what it is. The
+id has to go with the name because ids are handed out in `GEMEENTES` order
+(see `create_game`), so it would name the gemeente on its own; all
+face-down cards carry `card_id` `0` instead, which is no real card - real
+ids start at 1, and a claim aimed at `0` is a `404`. The frontend draws
+them as blacked-out cards counting down to their `visible_from`.
 
 ### `PUT /{game_id}/{team_color}/claim/{card_id}`
 
 **Needs that team's cookie** (`401` without it).
 
-Claims `card_id` for `team_color`, after checking it's visible to that
-team and that no discard is outstanding anywhere in the game.
+Claims `card_id` for `team_color`, after checking the game has started,
+that the card is visible to that team, and that no discard is outstanding
+anywhere in the game.
 
 A mandatory discard freezes the whole game, not just the team that is
 discarding: while any team's `can_discard_card` is `True`, every claim in that
@@ -250,6 +286,36 @@ complete it, so this is also what refuses a team trying to unfreeze the
 game on someone else's behalf. Resets the card to `InDeck`, resets
 `can_discard_card` to `False`, draws 1 new random `InDeck` card onto the
 public board, and returns that new card.
+
+## The 10:00 kickoff
+
+A game is usually created the evening before it's played, and creating it
+deals every board at once - so the deal is kept out of sight until the
+game actually starts, which is **10:00 Amsterdam time** on the day the
+game was created (`GAME_START_TIME` in `app/services.py`).
+
+Until then `GET /{game_id}/{team_color}/cards` reports every card as
+`InDeck` with nothing else on it, and every claim is refused with a `400`
+naming the start time. The stored rows are untouched: hiding happens to
+the objects on their way out through the response model, in a session
+that's closed without ever committing them, so the deal a game was
+created with is the deal it opens with.
+
+`game_starts_at()` derives that instant rather than storing it. There is
+no games table - a game exists implicitly as a `game_id` shared by its
+rows - and the schedule is a constant of this event rather than a
+per-game setting (the same way `PRIVATE_REVEAL_TIMES` is), so the only
+thing needed from the game itself is the day it was created. The cards
+table is an append-only ledger, which makes its oldest row for a game
+exactly the moment `create_game()` ran: no column to add, and no backfill
+for the games created before this rule existed.
+
+Kickoff and the private reveal times are both Amsterdam wall-clock times,
+turned into the naive UTC the database stores only at the point they
+become an instant (`_utc_instant()`). The times the players read off
+their own phones are therefore the times in the rules, whatever timezone
+the server runs in and whichever side of the DST switch the game falls
+on.
 
 ## True randomness for card selection
 

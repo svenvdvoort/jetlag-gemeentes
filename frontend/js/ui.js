@@ -121,10 +121,16 @@ function renderCardsPanel() {
     empty.className = "cards-empty";
     empty.textContent = "No cards on the board yet. Try refreshing.";
     list.appendChild(empty);
+    stopFaceDownClock();
     return;
   }
 
   for (const card of cards) {
+    if (isFaceDown(card)) {
+      list.appendChild(buildFaceDownCard(card));
+      continue;
+    }
+
     const isMine = card.card_state === "OnPrivateBoard";
     const button = document.createElement("button");
     button.type = "button";
@@ -163,6 +169,103 @@ function renderCardsPanel() {
     button.addEventListener("click", () => Modal.showCardDetail(card));
     list.appendChild(button);
   }
+
+  syncFaceDownClock();
+}
+
+/**
+ * One of our own private cards that hasn't opened yet: blacked out, a
+ * question mark where the other cards carry their gemeente's outline, and
+ * a countdown to the moment it opens.
+ *
+ * Not a button, unlike every other card in the deck. There's nothing
+ * behind it to read - the server sends no name, no challenge and no id -
+ * so there's nothing for a tap to open either, and a card that visibly
+ * can't be opened beats one that opens on an empty sheet.
+ *
+ * The moment it opens rides along on the element as `data-opens-at`, which
+ * is what the clock below ticks against: the panel is rebuilt from scratch
+ * on every refresh, so the clock can't hold on to cards or to State.
+ */
+function buildFaceDownCard(card) {
+  const wrap = document.createElement("div");
+  wrap.className = "playing-card playing-card--facedown";
+  wrap.dataset.opensAt = parseApiUtc(card.visible_from).getTime();
+  // "Opens in" so the digits say what they are, to a screen reader as much
+  // as to anyone squinting at a 96px card. Filled in by the first tick.
+  wrap.innerHTML = `
+    <span class="playing-card__question" aria-hidden="true">?</span>
+    <span class="playing-card__facedown">
+      Opens in <span class="playing-card__countdown"></span>
+    </span>
+  `;
+  return wrap;
+}
+
+// ---------------------------------------------------------------------
+// The face-down cards' clock
+// ---------------------------------------------------------------------
+
+/**
+ * The one-second interval behind every face-down card's countdown, or null
+ * while there's nothing counting down. One clock for the whole panel rather
+ * than one per card, and none at all on a board without face-down cards.
+ */
+let faceDownClock = null;
+
+/** When the clock last asked for the board back, so a disagreement can't turn into a refresh a second. */
+let lastFaceDownOpen = 0;
+
+/** How long to leave between those requests. */
+const FACE_DOWN_OPEN_RETRY_MS = 10000;
+
+/** The cards the clock ticks - scoped to the deck, which is the only place they live. */
+const FACE_DOWN_SELECTOR = "#cards-list [data-opens-at]";
+
+/** Starts the clock if any card is counting down, stops it if none is. */
+function syncFaceDownClock() {
+  if (!document.querySelector(FACE_DOWN_SELECTOR)) {
+    stopFaceDownClock();
+    return;
+  }
+  if (faceDownClock === null) {
+    faceDownClock = setInterval(tickFaceDownCards, 1000);
+  }
+  // The refresh that got us here replaced the cards, so fill the new ones
+  // in now instead of leaving them blank until the next tick - which is
+  // also what opens a card whose time came while the panel was elsewhere.
+  tickFaceDownCards();
+}
+
+function stopFaceDownClock() {
+  clearInterval(faceDownClock);
+  faceDownClock = null;
+}
+
+/**
+ * Retimes every face-down card, and fetches the board when one of them is
+ * due.
+ *
+ * Counting on the server's clock (`serverNow()`) is what makes that safe:
+ * zero here means the card is open server-side and only this board hasn't
+ * heard yet, so one refresh turns it face up. The retry floor covers the
+ * case where the server disagrees anyway - a clock that drifted since
+ * /status answered - by making that a check every few seconds rather than
+ * one per tick.
+ */
+function tickFaceDownCards() {
+  let due = false;
+
+  for (const card of document.querySelectorAll(FACE_DOWN_SELECTOR)) {
+    const remaining = Number(card.dataset.opensAt) - serverNow();
+    card.querySelector(".playing-card__countdown").textContent =
+      formatCountdown(remaining);
+    if (remaining <= 0) due = true;
+  }
+
+  if (!due || Date.now() - lastFaceDownOpen < FACE_DOWN_OPEN_RETRY_MS) return;
+  lastFaceDownOpen = Date.now();
+  window.refreshAll();
 }
 
 // ---------------------------------------------------------------------
@@ -933,6 +1036,40 @@ async function traceOutline(stage, url) {
 function teamName(teamColor) {
   const team = State.teams.find((t) => t.team_color === teamColor);
   return team ? team.team_name : teamColor;
+}
+
+/**
+ * A timestamp on a card as a Date. Those are naive UTC - no offset on the
+ * end, unlike the ones GET /{game}/status sends - and JavaScript reads a
+ * timestamp without an offset as *local* time, which would put a reveal
+ * time two hours early in an Amsterdam summer. So the zone gets said out
+ * loud here rather than guessed at.
+ */
+function parseApiUtc(timestamp) {
+  return new Date(`${timestamp}Z`);
+}
+
+/**
+ * An instant as the time of day this device would call it. Everyone
+ * playing is on Amsterdam time, which is the timezone the game's times are
+ * set in, so this reads as the 10:00 the rules talk about - and honestly
+ * says something else on a phone that isn't.
+ */
+function formatClockTime(timestampMs) {
+  return new Date(timestampMs).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/**
+ * A duration as H:MM:SS, never past zero. Tabular figures in the CSS stop
+ * the line shifting as the digits tick over underneath it.
+ */
+function formatCountdown(remainingMs) {
+  const seconds = Math.max(0, Math.ceil(remainingMs / 1000));
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${Math.floor(seconds / 3600)}:${pad(Math.floor((seconds % 3600) / 60))}:${pad(seconds % 60)}`;
 }
 
 function escapeHtml(str) {

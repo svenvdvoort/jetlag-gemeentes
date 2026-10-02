@@ -64,8 +64,18 @@ const State = {
     return this.cards.find((c) => c.card_id === cardId);
   },
 
-  /** Cards shown in the bottom cards panel: public board + our own visible private cards. */
+  /**
+   * Cards shown in the bottom cards panel: public board + our own private
+   * cards, the ones still face down (see `isFaceDown`) last of all - they
+   * can't be played, so they belong at the end of the hand rather than
+   * sorted in among the cards that can.
+   */
   panelCards() {
+    // Public board first, then the private cards we can read, then the
+    // ones still face down.
+    const rank = (card) =>
+      card.card_state === "OnPublicBoard" ? 0 : isFaceDown(card) ? 2 : 1;
+
     return this.cards
       .filter(
         (c) =>
@@ -74,19 +84,10 @@ const State = {
             c.private_board_team === this.myTeamColor),
       )
       .sort((a, b) => {
-        // First sort on public vs private cards (public cards are shown first)
-        if (
-          a.card_state === "OnPublicBoard" &&
-          b.card_state === "OnPrivateBoard"
-        ) {
-          return -1;
-        } else if (
-          a.card_state === "OnPrivateBoard" &&
-          b.card_state === "OnPublicBoard"
-        ) {
-          return 1;
-        }
-        // Then sort alphabetically
+        if (rank(a) !== rank(b)) return rank(a) - rank(b);
+        // A face-down card has no name to sort on, so those go in the
+        // order they open - which is also the order they'll be played in.
+        if (isFaceDown(a)) return a.visible_from.localeCompare(b.visible_from);
         return a.card_name.localeCompare(b.card_name);
       });
   },
@@ -129,7 +130,14 @@ const State = {
   /** Unclaimed regular gemeentes, for the wild-card target dropdown. */
   unclaimedGemeentes() {
     return this.cards
-      .filter((c) => c.card_state !== "Claimed" && !c.is_wild_card)
+      .filter(
+        (c) =>
+          c.card_state !== "Claimed" &&
+          !c.is_wild_card &&
+          // A face-down card has no name to offer, and naming it is the
+          // one thing the wild card doesn't get to do.
+          !isFaceDown(c),
+      )
       .map((c) => c.card_name)
   },
 
@@ -183,6 +191,19 @@ const State = {
     return names;
   },
 };
+
+/**
+ * True for one of our own private cards that hasn't opened yet.
+ *
+ * The server strips those of everything that would identify them - name,
+ * challenge text, even the card id, since ids are handed out in gemeente
+ * order (`_redact_as_face_down` in `app/services.py`) - and keeps only the
+ * state, the team and the time the card opens. So a private card with no
+ * name *is* a face-down one; there's no separate flag to read.
+ */
+function isFaceDown(card) {
+  return card.card_state === "OnPrivateBoard" && !card.card_name;
+}
 
 /**
  * Scores one team's claimed gemeentes: flood-fills them over the

@@ -5,8 +5,9 @@ thin and the random-draw / visibility rules are defined exactly once.
 
 from __future__ import annotations
 
-from datetime import datetime, time
+from datetime import date, datetime, time, timezone
 from typing import List, Optional
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import and_, func
 from sqlalchemy.orm.session import make_transient
@@ -16,16 +17,28 @@ from app.auth import generate_team_token
 from app.challenges import CHALLENGES
 from app.game_data import EMPTY_CHALLENGE, GEMEENTES, WILD_CARDS
 from app.models import Card, CardState, Team, TeamColor
-from app.schemas import GameSummary, TeamCreate, TeamToken
+from app.schemas import GameStatus, GameSummary, TeamCreate, TeamToken
 
 PRIVATE_BOARD_CARDS_PER_TEAM = 4
 PUBLIC_BOARD_INITIAL_CARDS = 7
 
+# The game runs on Amsterdam wall-clock time: the times below are the
+# ones the players read off their own phones, whatever timezone the server
+# happens to be in and whichever side of the DST switch the game falls on.
+# Everything stored in - and compared against - the database stays naive
+# UTC, so these only become an instant through _utc_instant().
+AMSTERDAM = ZoneInfo("Europe/Amsterdam")
+
+# Kickoff. Creating a game deals every board straight away, but that
+# usually happens the evening before, so until this time the deal is kept
+# out of sight: every card reads as still in the deck and no claim is
+# accepted. See game_starts_at().
+GAME_START_TIME = time(10, 0)
+
 # The 4 cards dealt to each team's private board get staggered reveal
-# times: 2 at 10:00, 1 at 12:00, 1 at 14:00 (today). Order doesn't matter
+# times: 2 at kickoff, 1 at 12:00, 1 at 14:00. Order doesn't matter
 # since the 4 cards themselves were already drawn randomly.
-# (Times below are programmed in UTC, meaning -2 compared to CEST summer time)
-PRIVATE_REVEAL_TIMES = [time(8, 0), time(8, 0), time(10, 0), time(12, 0)]
+PRIVATE_REVEAL_TIMES = [GAME_START_TIME, GAME_START_TIME, time(12, 0), time(14, 0)]
 
 
 # --------------------------------------------------------------------------
@@ -90,6 +103,73 @@ def draw_random_cards(session: Session, game_id: str, state: CardState, count: i
 
 
 # --------------------------------------------------------------------------
+# Kickoff (nothing is revealed, and nothing can be claimed, before it)
+# --------------------------------------------------------------------------
+
+def _amsterdam_date(moment: datetime) -> date:
+    """The Amsterdam calendar day a naive-UTC instant falls on."""
+    return moment.replace(tzinfo=timezone.utc).astimezone(AMSTERDAM).date()
+
+
+def _utc_instant(day: date, local_time: time) -> datetime:
+    """`local_time` on `day`, Amsterdam, as the naive UTC the database stores."""
+    return (
+        datetime.combine(day, local_time, tzinfo=AMSTERDAM)
+        .astimezone(timezone.utc)
+        .replace(tzinfo=None)
+    )
+
+
+def game_starts_at(session: Session, game_id: str) -> Optional[datetime]:
+    """
+    When this game kicks off: GAME_START_TIME (Amsterdam) on the day it
+    was created, as naive UTC. None for a game that has no cards, which
+    isn't a game anyone can play.
+
+    Derived rather than stored. There's no games table - a game exists
+    implicitly as a game_id shared by its rows - and the schedule is a
+    constant of this event rather than a per-game setting (same as
+    PRIVATE_REVEAL_TIMES), so the only thing needed from the game itself
+    is the day it was created. The cards table is an append-only ledger,
+    which makes its oldest row for a game exactly the moment create_game
+    ran - no column, and no backfill for games created before this rule
+    existed.
+    """
+    created = session.exec(
+        select(func.min(Card.updated_timestamp)).where(Card.game_id == game_id)
+    ).one()
+    if created is None:
+        return None
+    return _utc_instant(_amsterdam_date(created), GAME_START_TIME)
+
+
+def game_has_started(session: Session, game_id: str, now: Optional[datetime] = None) -> bool:
+    """Whether the game is on yet. A game with no cards counts as started - it has nothing to hide."""
+    starts_at = game_starts_at(session, game_id)
+    if starts_at is None:
+        return True
+    return (now or datetime.utcnow()) >= starts_at
+
+
+def game_status(session: Session, game_id: str) -> GameStatus:
+    """
+    What the board needs to know before it draws anything: whether the
+    game is on, and if not, the instant it will be - see GameStatus.
+    """
+    starts_at = game_starts_at(session, game_id)
+    if starts_at is None:
+        raise GameNotFoundError(f"Game '{game_id}' not found.")
+
+    now = datetime.utcnow()
+    return GameStatus(
+        game_id=game_id,
+        starts_at=starts_at.replace(tzinfo=timezone.utc),
+        started=now >= starts_at,
+        server_time=now.replace(tzinfo=timezone.utc),
+    )
+
+
+# --------------------------------------------------------------------------
 # Visibility rule (shared by GET /cards and the claim endpoint)
 # --------------------------------------------------------------------------
 
@@ -112,24 +192,71 @@ def card_on_board_for_team(card: Card, team_color: TeamColor, now: Optional[date
     return False
 
 
+def _hide_as_in_deck(card: Card) -> None:
+    """
+    Rewrite one card into "still in the deck" for one team's response.
+
+    The stored row is left alone: this edits the objects on their way out
+    through the response model, and the request's session is closed
+    without ever committing them, so hiding a card from one team can't
+    hide it from the game.
+    """
+    card.card_state = CardState.IN_DECK
+    card.private_board_team = None
+    card.visible_from = None
+    card.claimed_team = None
+
+
+def _redact_as_face_down(card: Card) -> None:
+    """
+    Turn one of the team's own private cards that isn't due yet into a
+    face-down one: it keeps its state, its team and the time it opens, so
+    the team knows a card is coming and when, but loses everything that
+    would say which card it is.
+
+    The id goes too, not just the name: ids are handed out in GEMEENTES
+    order (see create_game), so it would name the gemeente on its own.
+
+    Same deal as _hide_as_in_deck - the stored row is untouched, this only
+    rewrites the object on its way out through the response model.
+    """
+    card.card_id = -1
+    card.card_name = ""
+    card.challenge_title = ""
+    card.challenge_description = ""
+    card.challenge_link = None
+    card.claimed_team = None
+    card.is_wild_card = False
+
+
 def get_cards_for_team(session: Session, game_id: str, team_color: TeamColor) -> List[Card]:
     """
     All cards as they are visible to this team.
-    Accounts for private cards of other teams.
+    Accounts for a game that hasn't kicked off yet, for private cards of
+    other teams, and for the team's own private cards that aren't due yet.
     """
     now = datetime.utcnow()
+    # Asked before any card is touched: a query run after the edits below
+    # would autoflush them into the database on its way out.
+    started = game_has_started(session, game_id, now)
     all_cards = session.exec(_current_cards(game_id)).all()
     for card in all_cards:
         card.updated_timestamp = now
-        if card.card_state == CardState.ON_PRIVATE_BOARD:
-            if card.private_board_team == team_color and card.visible_from > now:
-                card.card_state = CardState.IN_DECK
-                card.private_board_team = None
-                card.visible_from = None
+        if not started:
+            # The deal happens when the game is created, but nobody sees
+            # it before kickoff: no public board, no private cards,
+            # nothing claimed. Every card still comes back - an InDeck
+            # card always does, challenge text and all - just as a deck
+            # nobody has dealt from yet.
+            _hide_as_in_deck(card)
+        elif card.card_state == CardState.ON_PRIVATE_BOARD:
             if card.private_board_team != team_color:
-                card.card_state = CardState.IN_DECK
-                card.private_board_team = None
-                card.visible_from = None
+                # Another team's private card: not ours to know about at all.
+                _hide_as_in_deck(card)
+            elif card.visible_from > now:
+                # Ours, but not open yet - the team sees a blacked-out
+                # card with the time on it rather than nothing at all.
+                _redact_as_face_down(card)
     # Sort card by gemeente naam before returning to web client
     all_cards = sorted(all_cards, key=lambda card: card.card_name)
     return all_cards
@@ -304,7 +431,10 @@ def create_game(session: Session, game_id: str, teams: List[TeamCreate]) -> Game
         # 3. Deal 4 random private-board cards to each team, staggered
         #    reveal times. Flushing after each team's draw is what makes
         #    the *next* team's random draw exclude these cards.
-        today = now.date()
+        # Amsterdam's day rather than UTC's, so a game created late in the
+        # evening still schedules onto the day its players call today -
+        # and so it agrees with what game_starts_at() derives later.
+        game_day = _amsterdam_date(now)
         for t in teams:
             drawn = draw_random_cards(session, game_id, CardState.IN_DECK, PRIVATE_BOARD_CARDS_PER_TEAM, include_wildcards=False)
             if len(drawn) < PRIVATE_BOARD_CARDS_PER_TEAM:
@@ -314,7 +444,7 @@ def create_game(session: Session, game_id: str, teams: List[TeamCreate]) -> Game
             for card, reveal_time in zip(drawn, PRIVATE_REVEAL_TIMES):
                 card.card_state = CardState.ON_PRIVATE_BOARD
                 card.private_board_team = t.team_color.value
-                card.visible_from = datetime.combine(today, reveal_time)
+                card.visible_from = _utc_instant(game_day, reveal_time)
                 card.updated_timestamp = now
                 session.add(card)
             session.flush()
@@ -393,7 +523,17 @@ def claim_card(
     """
     team = get_team_or_raise(session, game_id, team_color)
     card = get_card_or_raise(session, game_id, card_id)
-    
+
+    # Nothing is claimable before kickoff. A board that hasn't heard the
+    # game is on yet can't offer this anyway (every card reads as InDeck
+    # to it), so this is the backstop for one that asks regardless.
+    starts_at = game_starts_at(session, game_id)
+    if starts_at is not None and datetime.utcnow() < starts_at:
+        local_start = starts_at.replace(tzinfo=timezone.utc).astimezone(AMSTERDAM)
+        raise InvalidActionError(
+            f"The game hasn't started yet - it starts at {local_start:%H:%M}."
+        )
+
     # Claims are frozen for everyone while a discard is outstanding, so
     # this looks at the whole game and not just at `team`.
     pending_team = get_pending_discard_team(session, game_id)

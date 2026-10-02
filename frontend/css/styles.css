@@ -407,6 +407,61 @@ button {
   overflow-wrap: break-word;
 }
 
+/* One of our own private cards that hasn't opened yet. Blacked out, and
+   the same size and border as the rest of the deck, so it reads as a card
+   in hand rather than as a gap where one should be. */
+.playing-card--facedown {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+  align-items: stretch;
+  cursor: default;
+}
+
+/* It isn't a button, so nothing should suggest pressing it. */
+.playing-card--facedown:hover,
+.playing-card--facedown:active {
+  transform: none;
+}
+
+/* Takes the slot the gemeente's outline fills on every other card, at the
+   size that outline is drawn - so a turned-over card still reads as a card
+   in the row rather than as a hole in it. */
+.playing-card__question {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+/* The name's slot on a card with no name to put in it. UI face rather
+   than the display one the names use: this is a label about the card, not
+   the card's own title. */
+.playing-card__facedown {
+  flex: 0 0 auto;
+  width: 100%;
+  margin: 0.3rem 0 0;
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1.15;
+  text-align: center;
+  opacity: 0.9;
+}
+
+/* Ticks once a second, so the figures have to be the same width or the
+   whole caption jitters under it. */
+.playing-card__countdown {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* With a shape above it the name is a caption, not the whole card: it
    drops to the foot at a size that still fits the two-line names, and
    gives up the auto margins that were centring it in an empty card. */
@@ -1110,6 +1165,36 @@ button {
   background: var(--hairline);
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Kickoff screen (board.html, before the game starts)                  */
+/* ------------------------------------------------------------------ */
+/* Stands in for the whole board, so it borrows the join page's shell
+   (.join, .join__logo, .join__title, .join__subtitle, .join__footer) -
+   the eyebrow and the clock are all that's new here. */
+.pregame {
+  text-align: center;
+}
+
+.pregame__eyebrow {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin: 0 0 0.45rem;
+}
+
+/* The one thing on the screen worth looking at while waiting, so it gets
+   the display face at display size. Tabular figures because otherwise
+   every tick of the seconds shifts the whole line sideways. */
+.pregame__countdown {
+  font-family: var(--font-display);
+  font-size: 2.75rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--accent);
+  margin: 0.6rem 0 1.1rem;
 }
 
 /* ------------------------------------------------------------------ */

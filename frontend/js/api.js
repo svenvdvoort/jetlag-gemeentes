@@ -47,6 +47,20 @@ const Api = {
     return request("pairs");
   },
 
+  /**
+   * Whether the game has started yet, as
+   * `{game_id, starts_at, started, server_time}`. The two timestamps are
+   * UTC with an offset on them, so Date.parse reads them as the instants
+   * they are; `server_time` is the clock the countdown runs off.
+   */
+  async getStatus(gameId) {
+    const status = await request(`${gameId}/status`);
+    // The one response that carries the server's clock, so this is where
+    // the offset below gets set - see serverNow().
+    serverClockOffsetMs = Date.parse(status.server_time) - Date.now();
+    return status;
+  },
+
   getTeams(gameId) {
     return request(`${gameId}/teams`);
   },
@@ -73,6 +87,23 @@ const Api = {
     });
   },
 };
+
+/**
+ * How far this device's clock is behind the server's, in ms.
+ *
+ * Everything on the board that counts towards a moment - the kickoff
+ * screen, the face-down cards - is counting towards one the *server*
+ * decides has arrived, so they tick on its clock rather than on this
+ * device's, which may be minutes out. Set from `server_time` on every
+ * /status response, and 0 until the first of those lands: without an
+ * answer, this device's clock is the only one there is.
+ */
+let serverClockOffsetMs = 0;
+
+/** The server's idea of now, in ms since the epoch. */
+function serverNow() {
+  return Date.now() + serverClockOffsetMs;
+}
 
 async function request(path, options = {}) {
   let response;

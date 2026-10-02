@@ -71,7 +71,8 @@ request same-origin.
   it redirects back to the join page, and so does a `401` from any
   refresh: the URL says which team to draw, but the cookie set at login
   is what decides which team you may draw, so hand-editing `?team=` to
-  peek at another board lands you back at the join page.
+  peek at another board lands you back at the join page. Opened before
+  the game starts it shows a countdown instead of the board - see "Kickoff" below.
 
 ## Architecture
 
@@ -170,7 +171,57 @@ as well as `pointermove`, because a tap never sends a pointermove at all.
 **Refreshing**: per your instructions, there's no polling and no
 websockets - only the refresh button (spinner icon, top right), plus an
 automatic refresh right after your own claim/discard so you immediately
-see its effect. To see _other_ teams' moves, someone has to tap refresh.
+see its effect. The two countdowns below are the only things that ask on
+their own, and each only when its own clock runs out: the kickoff screen on
+load and again at zero, a face-down card the moment it's due to open.
+To see _other_ teams' moves, someone has to tap refresh.
+
+**Kickoff**: the board isn't built before the game starts. `main.js` asks
+`GET /{game_id}/status` first and, for a game that hasn't started, puts
+the countdown screen up (`#pregame` in `board.html`) in the app's place -
+in its place rather than over it because a MapLibre map initialised inside
+a hidden container comes up sized 0x0 and stays that way, so `MapView` is
+only ever handed a visible one. The KML, the border graph and the gemeente
+shapes all load behind the countdown, so the board draws the moment it
+runs out.
+
+The server is what decides whether the game is on - it returns every card
+as still in the deck until then, and refuses claims - which makes the
+countdown a scheduler rather than a gate: it decides when to ask again,
+and the answer always comes from `/status`.
+
+Both countdowns on the board tick off the server's clock rather than this
+device's: `Api.getStatus()` records how far apart the two are and
+`serverNow()` in `js/api.js` hands out the result. A phone running a minute
+fast therefore can't open an empty board - or a card the server is still
+sitting on - a minute early.
+
+**Face-down cards**: the private cards that open later in the day arrive
+stripped of everything that identifies them - no name, no challenge text,
+not even a card id (see the cards endpoint in the root README). That is
+what `isFaceDown()` in `js/state.js` recognises: a private card with no
+name _is_ a face-down one, so there's no flag to keep in sync. They're
+drawn blacked out - a question mark where the other cards carry their
+gemeente's outline, and a countdown to the moment they open - sorted to
+the end of the deck since they can't be played, and they're the one card
+in the panel that isn't a button: there is nothing behind them to open.
+They also stay out of the wild-card target dropdown, which would otherwise
+carry a nameless option that names nothing.
+
+One interval ticks all of them (`faceDownClock` in `js/ui.js`), and only
+while the panel is holding one. The panel is rebuilt from scratch on every
+refresh, so each card carries the instant it opens on itself as
+`data-opens-at` rather than the clock keeping hold of cards or of State.
+When a countdown runs out, the card is already open server-side and only
+this board hasn't heard, so the tick fetches the board - which is the card
+turning itself face up. Counting on the server's clock is what keeps that
+to a single request; `FACE_DOWN_OPEN_RETRY_MS` is the floor under it for
+the case where the server disagrees anyway.
+
+That instant is read off a naive UTC timestamp, unlike the ones
+`GET /{game_id}/status` sends, so `parseApiUtc()` in `js/ui.js` says the
+zone out loud first - `new Date("...T10:00:00")` is read as _local_ time,
+which would have an Amsterdam summer card opening two hours early.
 
 **The draw reveal**: a claim or a discard ends on whatever replaced the
 card that left, dealt onto the sheet as a card rather than named in a
