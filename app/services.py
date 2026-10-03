@@ -5,6 +5,7 @@ thin and the random-draw / visibility rules are defined exactly once.
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, time
 from typing import List, Optional
 
@@ -26,6 +27,8 @@ PUBLIC_BOARD_INITIAL_CARDS = 7
 # since the 4 cards themselves were already drawn randomly.
 # (Times below are programmed in UTC, meaning -2 compared to CEST summer time)
 PRIVATE_REVEAL_TIMES = [time(8, 0), time(8, 0), time(10, 0), time(12, 0)]
+
+logger = logging.getLogger("jetlag_gemeentes")
 
 
 # --------------------------------------------------------------------------
@@ -334,6 +337,8 @@ def create_game(session: Session, game_id: str, teams: List[TeamCreate]) -> Game
         session.rollback()
         raise
 
+    logger.info(f"Game {game_id} created, with teams: {[str(team) for team in created_teams]}")  # Also displays team tokens in log
+    
     return GameCreationResult(
         teams=created_teams,
         cards_seeded=total_cards_seeded,
@@ -468,8 +473,17 @@ def claim_card(
         session.rollback()
         raise
 
-    for card in new_cards:
-        session.refresh(card)
+    for new_card in new_cards:
+        session.refresh(new_card)
+
+    if card.is_wild_card:
+        logger.info(f"{game_id}: {target_card.card_name} was claimed by team {team.team_color} using wild card {card.card_name}. "
+                    f"New cards appeared on the public board: {[c.card_name for c in new_cards]}")
+    else:
+        logger.info(f"{game_id}: {card.card_name}{"" if was_public_card else " (private)"} "
+                    f"was claimed by team {team.team_color}. "
+                    f"New cards appeared on the public board: {[c.card_name for c in new_cards]}")
+
     return new_cards
 
 
@@ -507,4 +521,8 @@ def discard_card(session: Session, game_id: str, team_color: TeamColor, card_id:
         raise
 
     session.refresh(new_card)
+
+    logger.info(f"{game_id}: Team {team.team_color} discarded {card.card_name} from public board. "
+                f"New card appeared on public board: {new_card.card_name}")
+    
     return new_card

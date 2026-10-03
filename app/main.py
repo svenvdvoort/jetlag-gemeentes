@@ -6,6 +6,7 @@ Wires up the app, DB startup/table creation, the games router
 (app/routers/gemeentes.py), plus a simple health check.
 """
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -14,6 +15,9 @@ from app.database import init_db
 from app.game_data import get_gemeente_pairs
 from app.routers.games import router as games_router
 from app.routers.gemeentes import router as gemeentes_router
+
+logging.basicConfig()
+logging.getLogger().setLevel(logging.INFO)
 
 
 @asynccontextmanager
