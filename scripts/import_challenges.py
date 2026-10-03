@@ -36,7 +36,7 @@ DESCRIPTION_HEADER = "Challenge description"
 # The card name sits in the first column, which has no header text.
 NAME_COLUMN = 0
 
-DECK = GEMEENTES + WILD_CARDS
+DECK = GEMEENTES + list(WILD_CARDS)
 
 
 class SheetError(Exception):

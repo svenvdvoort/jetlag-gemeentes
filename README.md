@@ -35,7 +35,11 @@ jetlag-api/
 
 ### Cards (table `cards`)
 
-Composite primary key: `(game_id, card_id)`.
+Composite primary key: `(game_id, card_id, updated_timestamp)`. The
+timestamp is part of the key on purpose: the table is an append-only
+ledger, so every change to a card inserts a new row rather than updating
+the old one, and reads go through `_current_cards()` in
+`app/services.py`, which keeps only the newest row per card.
 
 | Field                 | Type                  | Notes                                             |
 | --------------------- | --------------------- | ------------------------------------------------- |
@@ -51,6 +55,32 @@ Composite primary key: `(game_id, card_id)`.
 | claimed_team          | str, optional         |                                                   |
 | is_wild_card          | bool, default `False` |                                                   |
 | updated_timestamp     | datetime, default now |                                                   |
+
+### Wild-card scopes (not a table)
+
+A wild card's challenge hangs off something that only exists in some
+gemeentes - a Burger King, a stretch of the Pieterpad, a train station -
+so it can only be played there. Which gemeentes those are lives in
+`WILD_CARDS` in `app/game_data.py`, next to the deck itself, and is
+served as-is by `GET /wildcards`.
+
+That dict is also what defines the wild cards themselves - its keys, in
+order, are the wild-card half of the deck - so a wild card cannot exist
+without the list of gemeentes it may be played on.
+
+It is hand-maintained rather than imported, because the spreadsheet only
+ever had notes for two of the six cards, in free-form Dutch that listed a
+country and a gemeente outside the play area. The module refuses to
+import if a list names something that isn't in `GEMEENTES`, so a typo is
+a startup error instead of a gemeente quietly dropping off a card.
+
+Read at request time rather than frozen onto the card row the way
+challenge text is, so correcting a list fixes games already in progress.
+
+> **The lists for Nationale parken, Station, Intratuin and Kinderboerderij
+> are drafted, not verified.** Pieterpad and Burger King came from the
+> spreadsheet. Intratuin and Kinderboerderij in particular are guesses -
+> check them before playing.
 
 ### Teams (table `teams`)
 
@@ -226,17 +256,20 @@ the frontend can say who's holding things up.
 `get_pending_discard_team()` in `app/services.py` is the one place that
 answers "is this game frozen, and by whom?".
 
-- Non-wild card: card -> `Claimed`, `claimed_team` set, and the team's
-  `can_discard_card` is set to `True`.
+- Non-wild card: card -> `Claimed`, `claimed_team` set.
 - Wild card: requires a `target_card_id` query parameter naming the
   (not-yet-claimed, non-wild) card being claimed with it. Both the wild
-  card and the target card are set to `Claimed`. `can_discard_card` is
-  **not** granted for wild-card claims, per spec. A wild card can target
-  any not-yet-claimed regular card, even one not currently visible to the
-  team - that's the point of a wild card.
+  card and the target card are set to `Claimed`. The target has to be one
+  of the gemeentes that wild card applies to (see `GET /wildcards`);
+  anything else is refused with `400`. Visibility, on the other hand, is
+  not checked on the target - a wild card can take a gemeente still in
+  the deck, which is the point of a wild card.
 
-Either way, 1 new random `InDeck` card is drawn onto the public board,
-and that new card is returned in the response.
+Either way the team's `can_discard_card` is set to `True`, and 1 new
+random `InDeck` card is drawn onto the public board and returned. A
+wild-card claim can free two public-board slots at once - the wild card
+and its target, if both were on the board - so the response is a list of
+0, 1, or 2 cards.
 
 Example: `PUT /ABC123/orange/claim/42?target_card_id=7`
 
@@ -250,6 +283,22 @@ complete it, so this is also what refuses a team trying to unfreeze the
 game on someone else's behalf. Resets the card to `InDeck`, resets
 `can_discard_card` to `False`, draws 1 new random `InDeck` card onto the
 public board, and returns that new card.
+
+### `GET /pairs`
+
+Every pair of gemeentes that border each other, as `[["Aalten", "Oost
+Gelre"], ...]`. Derived from the CBS KML export at startup and cached for
+the life of the process. The board uses it to score connected clusters
+and to highlight what a gemeente borders.
+
+### `GET /wildcards`
+
+Wild card name -> the gemeentes it may be played on, straight from
+`WILD_CARDS` (see the data model above). The board uses it to
+stripe those gemeentes while the card is in play, to list the wild cards
+that apply when you open a gemeente, and to limit the target picker.
+
+Static like `/pairs`: no `game_id`, no database.
 
 ## True randomness for card selection
 
@@ -347,7 +396,8 @@ jetlag-api/
 │   ├── __init__.py
 │   ├── models.py       # ORM data model: Card, Team, CardState, TeamColor
 │   ├── database.py     # engine/session setup, driven by DATABASE_URL
-│   ├── game_data.py    # static gemeente + wild card list used to seed a deck
+│   ├── game_data.py    # static gemeente + wild card list used to seed a deck,
+│   │                   #   plus which gemeentes each wild card may be played on
 │   ├── challenges.py   # generated: challenge text per card (see below)
 │   ├── schemas.py       # request/response schemas that aren't 1:1 with a table
 │   ├── services.py      # game logic: seeding, random draws, visibility, claim/discard

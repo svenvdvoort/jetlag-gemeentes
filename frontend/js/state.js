@@ -15,6 +15,8 @@ const State = {
   _neighbours: new Map(), // gemeente name -> Set of gemeentes it borders
   _pairsLoaded: false,
 
+  _wildcardGemeentes: new Map(), // wild card name -> Set of gemeentes it applies to
+
   init(gameId, myTeamColor) {
     this.gameId = gameId;
     this.myTeamColor = myTeamColor;
@@ -55,6 +57,38 @@ const State = {
     return this._neighbours.get(name) || new Set();
   },
 
+  /**
+   * Stores the {"Burger King Wild Card": ["Zwolle", ...], ...} scopes from
+   * GET /wildcards as name -> Set. Fetched once at startup alongside
+   * /pairs: which gemeentes a wild card applies to is a rule about the
+   * deck, so it can't change while the board is open.
+   *
+   * If this never lands the stripes and the wild-card list in the gemeente
+   * panel stay empty, but claims are still refused server-side - the rule
+   * lives there, this is only how the board shows it.
+   */
+  setWildcardGemeentes(byName) {
+    const scopes = new Map();
+    for (const [cardName, gemeentes] of Object.entries(byName || {})) {
+      scopes.set(cardName, new Set(gemeentes));
+    }
+    this._wildcardGemeentes = scopes;
+  },
+
+  /**
+   * True once we know which gemeentes `wildcardName` applies to, so an
+   * empty target list can say "all claimed" rather than "not loaded".
+   */
+  wildcardScopeLoaded(wildcardName) {
+    return this._wildcardGemeentes.has(wildcardName);
+  },
+
+  /** True if `wildcardName` may be played on `gemeenteName`. */
+  wildcardApplies(wildcardName, gemeenteName) {
+    const scope = this._wildcardGemeentes.get(wildcardName);
+    return Boolean(scope && scope.has(gemeenteName));
+  },
+
   /** Card object for a gemeente/wild-card name, or undefined if we can't see it. */
   cardByName(name) {
     return this.cards.find((c) => c.card_name === name);
@@ -67,12 +101,7 @@ const State = {
   /** Cards shown in the bottom cards panel: public board + our own visible private cards. */
   panelCards() {
     return this.cards
-      .filter(
-        (c) =>
-          c.card_state === "OnPublicBoard" ||
-          (c.card_state === "OnPrivateBoard" &&
-            c.private_board_team === this.myTeamColor),
-      )
+      .filter((c) => this.isOnBoardForMe(c))
       .sort((a, b) => {
         // First sort on public vs private cards (public cards are shown first)
         if (
@@ -126,11 +155,82 @@ const State = {
     return Boolean(this.pendingDiscardTeam());
   },
 
-  /** Unclaimed regular gemeentes, for the wild-card target dropdown. */
-  unclaimedGemeentes() {
+  /**
+   * Only used to fill the drop down menu for the wild card claim
+   * modal. It displays every unclaimed gemeente, because the wildcard
+   * overview could technically be incomplete and the player should still
+   * be able to decide to claim any gemeente using this wildcard.
+   */
+  wildcardTargets(wildcardName) {
     return this.cards
-      .filter((c) => c.card_state !== "Claimed" && !c.is_wild_card)
+      .filter(
+        (c) =>
+          !c.is_wild_card &&
+          c.card_state !== "Claimed",
+      )
       .map((c) => c.card_name)
+      .sort((a, b) => a.localeCompare(b));
+  },
+
+  /**
+   * The wild cards that apply to `gemeenteName`, as card objects, for the
+   * list under a gemeente's own challenge. Ones on a board come first -
+   * those are the ones you can act on - and each group is alphabetical.
+   *
+   * Includes wild cards still in the deck: knowing a gemeente is a Burger
+   * King gemeente is part of reading the board, and the panel marks which
+   * of them are actually in play.
+   */
+  wildcardsFor(gemeenteName) {
+    return this.cards
+      .filter((c) => c.is_wild_card && this.wildcardApplies(c.card_name, gemeenteName))
+      .sort((a, b) => {
+        const aPlayable = this.isOnBoardForMe(a) ? 0 : 1;
+        const bPlayable = this.isOnBoardForMe(b) ? 0 : 1;
+        if (aPlayable !== bPlayable) return aPlayable - bPlayable;
+        return a.card_name.localeCompare(b.card_name);
+      });
+  },
+
+  /**
+   * True for a card this team can actually claim right now (ignoring a
+   * freeze): on the public board, or revealed on our own private board.
+   * Same test panelCards() sorts on, named so the map and the modal can
+   * ask it too.
+   */
+  isOnBoardForMe(card) {
+    if (!card) return false;
+    return (
+      card.card_state === "OnPublicBoard" ||
+      (card.card_state === "OnPrivateBoard" &&
+        card.private_board_team === this.myTeamColor)
+    );
+  },
+
+  /**
+   * Every gemeente the map stripes: the scopes of the wild cards that are
+   * on a board for us, minus the gemeentes already claimed.
+   *
+   * Claimed ones drop out because a wild card can't be played there - a
+   * stripe over a team colour would promise something the server refuses.
+   * Wild cards still in the deck are left out for the same reason the map
+   * doesn't colour in-deck gemeentes: the map shows what is in play.
+   */
+  stripedGemeenteNames() {
+    const claimed = new Set(
+      this.cards
+        .filter((c) => c.card_state === "Claimed")
+        .map((c) => c.card_name),
+    );
+
+    const striped = new Set();
+    for (const card of this.cards) {
+      if (!card.is_wild_card || !this.isOnBoardForMe(card)) continue;
+      for (const name of this._wildcardGemeentes.get(card.card_name) || []) {
+        if (!claimed.has(name)) striped.add(name);
+      }
+    }
+    return striped;
   },
 
   /**

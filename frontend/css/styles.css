@@ -538,6 +538,14 @@ button {
   margin-bottom: 0.3rem;
 }
 
+/* Sits under the control rather than over it, so the label stays the
+   thing you read first and this only answers "why so few?". */
+.modal-field__hint {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  margin: 0.35rem 0 0;
+}
+
 .modal-field select,
 .modal-field input[type="text"] {
   width: 100%;
@@ -614,10 +622,14 @@ button {
   );
 }
 
-.card-detail__claimed {
+/* Where the card stands on the board. Every challenge the panel shows
+   wears one, including the ones that can't be played - saying so is the
+   whole reason they're listed. */
+.card-detail__status {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  font-family: var(--font-ui);
   font-size: 0.8rem;
   color: var(--ink-muted);
   background: var(--paper);
@@ -627,7 +639,20 @@ button {
   margin: 0 0 0.7rem;
 }
 
-.card-detail__claimed-dot {
+/* In play: the accent, same as the rule above it, since this is the one
+   status you can act on. */
+.card-detail__status--board {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Not in play - stated plainly rather than styled to look unavailable,
+   which at this size would just be hard to read. */
+.card-detail__status--off {
+  font-style: italic;
+}
+
+.card-detail__status-dot {
   width: 9px;
   height: 9px;
   border-radius: 999px;
@@ -658,6 +683,175 @@ button {
 }
 
 /* ------------------------------------------------------------------ */
+/* Wild cards that apply to the gemeente being read                   */
+/* ------------------------------------------------------------------ */
+/* A second half to the sheet, below the gemeente's own challenge: the
+   other way to take this gemeente. Separated by the same striped rule a
+   wild card wears in the deck and on the map, so the three read as one
+   idiom, and stepped down a level in type so the gemeente's own
+   challenge keeps the top of the sheet. */
+
+.card-detail__wilds {
+  margin-top: 1.4rem;
+  padding-top: 1rem;
+  /* The divider *is* the stripes - same 135deg repeat as the deck card
+     and the map fill, so a striped gemeente and this section are visibly
+     the same fact. A background rather than a border-image: it has to
+     tile, and only the top edge should carry it. */
+  background:
+    repeating-linear-gradient(
+      135deg,
+      var(--hairline),
+      var(--hairline) 4px,
+      transparent 4px,
+      transparent 8px
+    )
+    top left / 100% 6px no-repeat;
+}
+
+.card-detail__wilds-title {
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 0.75rem;
+}
+
+.wild-entry {
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.7rem;
+  margin-bottom: 0.6rem;
+  background: var(--surface);
+}
+
+.wild-entry:last-child {
+  margin-bottom: 0;
+}
+
+.wild-entry__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  /* The default marker sits outside the row and would push the name off
+     the left edge on a narrow phone. Replaced by the chevron below, which
+     can sit at the end where there's room for it. */
+  list-style: none;
+}
+
+.wild-entry__summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Says the row opens. Without it these read as three labels rather than
+   three things to tap, and the challenge text behind them is the point. */
+.wild-entry__chevron {
+  flex: 0 0 auto;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid var(--ink-muted);
+  border-bottom: 2px solid var(--ink-muted);
+  transform: rotate(45deg) translate(-2px, -2px);
+  transition: transform 0.15s ease;
+}
+
+.wild-entry[open] .wild-entry__chevron {
+  transform: rotate(-135deg) translate(-2px, -2px);
+}
+
+.wild-entry__name {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+/* Inside a summary the pill's bottom margin would push the row off
+   centre, and it must not shrink to fit a long card name. The auto left
+   margin eats the whole gap between the name and the chevron, so the pill
+   sits against the right edge whatever the name's length - it must stay
+   the only auto margin on the row, or the two would split the gap and
+   strand the pill in the middle. */
+.wild-entry__status {
+  margin: 0;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+/* Wrap once the name and the pill can't share a line - which on the
+   narrowest phones they can't. */
+@media (max-width: 22rem) {
+  .wild-entry__summary {
+    flex-wrap: wrap;
+  }
+}
+
+.wild-entry[open] .wild-entry__summary {
+  margin-bottom: 0.6rem;
+}
+
+/* The challenge text sits on the sheet inside an entry, not on another
+   panel of its own - .card-detail__body's own background is the same
+   colour as the entry and would only add a second border. */
+.wild-entry .card-detail__body {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: 0.7rem;
+  font-size: 0.95rem;
+}
+
+.wild-entry .modal-actions {
+  margin-bottom: 0.1rem;
+}
+
+/* The two muted fold lines on the sheet: the one holding the wild cards
+   that apply here but aren't on the board, and the one holding a gemeente's
+   own challenge text when a wild card is the only way to take it.
+   Deliberately not entries themselves - no panel, no border - so they read
+   as a line about what's behind them rather than another card in the
+   list. */
+.wild-more > summary,
+.card-detail__fold-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+  padding: 0.2rem 0.1rem;
+}
+
+.wild-more > summary::-webkit-details-marker,
+.card-detail__fold-summary::-webkit-details-marker {
+  display: none;
+}
+
+.wild-more > summary:hover,
+.card-detail__fold-summary:hover {
+  color: var(--ink);
+}
+
+.wild-more[open] > summary,
+.card-detail__fold[open] > .card-detail__fold-summary {
+  margin-bottom: 0.5rem;
+}
+
+/* Stands where the open text panel would have: the wild cards below it keep
+   the gap they'd have from one. */
+.card-detail__fold {
+  margin-bottom: 0.9rem;
+}
+
+/* Nothing above them when the fold is the only thing in the section. */
+.wild-more .wild-entry:last-child {
+  margin-bottom: 0;
+}
+
 /* Traced outlines                                                      */
 /* ------------------------------------------------------------------ */
 /* A gemeente that draws itself, on the two screens where one shape is the

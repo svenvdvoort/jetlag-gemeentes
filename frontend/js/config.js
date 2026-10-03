@@ -79,6 +79,19 @@ const CONFIG = {
     strokeWidth: 1.5,
     claimedStrokeWidth: 1.5,
 
+    // Diagonal stripes over every gemeente an in-play wild card can be
+    // used on - the same idiom a wild card wears in the deck (see
+    // .playing-card--wild in css/styles.css). Drawn into a repeating tile
+    // at runtime, since WebGL fills can't take a CSS gradient, so the
+    // color lives in the image and not in a paint property.
+    //
+    // These are screen pixels, not metres: the tile repeats in screen
+    // space, so stripes keep their width at every zoom.
+    wildcardStripeColor: "#50a0b9",
+    wildcardStripeOpacity: 0.7,
+    wildcardStripeWidth: 3, // thickness of one stripe
+    wildcardStripeSize: 10, // tile size, so the gap is size - width
+
     // Hovering a gemeente (tapping it, on touch) outlines it and
     // highlights everything it borders (see MapView._setHighlighted).
     // Drawn on top of the regular fills, so these have to read against
@@ -125,7 +138,7 @@ function writeRemembered(gameId, teamColor) {
   try {
     window.localStorage.setItem(
       LAST_JOIN_KEY,
-      JSON.stringify({ game: gameId, team: teamColor })
+      JSON.stringify({ game: gameId, team: teamColor }),
     );
   } catch (_) {
     // Not being able to remember the pick isn't worth interrupting the join.

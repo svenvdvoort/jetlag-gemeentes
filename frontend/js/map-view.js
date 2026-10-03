@@ -20,6 +20,7 @@ const MapView = {
   baseMapOpacity: CONFIG.BASEMAP_OPACITY,
   _basemapOpacityControl: null,
   _pendingStyleUpdate: false,
+  _stripedNames: [],
   _lastPointerType: null,
   _touchStart: null,
   _longPressTimer: null,
@@ -79,6 +80,36 @@ const MapView = {
           "fill-opacity": ["get", "fillOpacity"],
         },
       });
+
+      // Stripes over every gemeente an in-play wild card can be used on,
+      // over the state colors so a striped gemeente still shows whether
+      // it's on the board, and under the hover tints and every outline so
+      // it never competes with those. Filtered to nothing until
+      // applyStyles() says which gemeentes those are.
+      //
+      // A separate layer rather than a property on gemeentes-fill because
+      // fill-pattern ignores fill-color: one layer can draw the state
+      // color or the stripes, not both.
+      // Skipped rather than fatal if the stripe tile can't be drawn: the
+      // stripes are a way of reading the board, and everything below here
+      // - the click handlers, the labels, the opening fitBounds - is the
+      // board itself.
+      const stripes = buildStripePattern();
+      if (stripes) {
+        this.map.addImage(WILDCARD_PATTERN_ID, stripes.image, {
+          pixelRatio: stripes.pixelRatio,
+        });
+        this.map.addLayer({
+          id: "gemeentes-wildcard-fill",
+          type: "fill",
+          source: "gemeentes",
+          filter: matchNames([]),
+          paint: {
+            "fill-pattern": WILDCARD_PATTERN_ID,
+            "fill-opacity": fill.wildcardStripeOpacity,
+          },
+        });
+      }
 
       // Tint over the gemeentes bordering the hovered one, under the
       // outlines so it never washes them out. Filtered to nothing until
@@ -302,6 +333,7 @@ const MapView = {
 
       this.loaded = true;
       this._applyBaseMapOpacity();
+      this._applyWildcardFilter();
       if (this._pendingStyleUpdate) {
         this._pendingStyleUpdate = false;
         this.applyStyles();
@@ -385,14 +417,29 @@ const MapView = {
       Object.assign(feature.properties, this._styleFor(card, isScoring));
     }
 
+    // Not a per-feature property: fill-pattern can't be data-driven off
+    // the source the way the colors are, so the striped gemeentes go into
+    // a layer filter instead. Stashed before the early return below so the
+    // load handler can apply it too.
+    this._stripedNames = [...State.stripedGemeenteNames()];
+
     if (!this.loaded) {
       // Map style/source isn't ready yet - applied as soon as it is.
       this._pendingStyleUpdate = true;
       return;
     }
 
+    this._applyWildcardFilter();
+
     const source = this.map.getSource("gemeentes");
     if (source) source.setData(this.geojson);
+  },
+
+  /** Stripe exactly the gemeentes in `_stripedNames`, once the map is up. */
+  _applyWildcardFilter() {
+    if (!this.loaded) return;
+    if (!this.map.getLayer("gemeentes-wildcard-fill")) return;
+    this.map.setFilter("gemeentes-wildcard-fill", matchNames(this._stripedNames));
   },
 
   /**
@@ -463,6 +510,65 @@ const MapView = {
 /** Layer filter matching exactly the gemeentes in `names` - nothing when it's empty. */
 function matchNames(names) {
   return ["in", ["get", "name"], ["literal", names]];
+}
+
+/** Image id the wild-card stripe pattern is registered under. */
+const WILDCARD_PATTERN_ID = "wildcard-stripes";
+
+/**
+ * Draws the repeating diagonal stripe tile the wild-card layer fills with,
+ * as {image, pixelRatio} for map.addImage(), or null if this browser won't
+ * give us a 2D canvas to draw it on.
+ *
+ * A pattern image rather than a paint property because MapLibre fills are
+ * WebGL: there's no CSS gradient to hand it, so the stripes have to arrive
+ * as pixels, with their color baked in (fill-pattern ignores fill-color).
+ *
+ * Seamless at 45 degrees: the line is drawn three times, offset by a full
+ * tile left and right, so the part that runs off one edge is the part that
+ * arrives on the other. Rendered at devicePixelRatio and handed back with
+ * that as `pixelRatio`, so the tile is still a CONFIG-sized square in
+ * screen pixels but isn't soft on a phone.
+ *
+ * Each line is drawn a tile longer than it needs to be at both ends, so
+ * that the stroke crossing the tile is a full-width band all the way to
+ * the edge. Ending a line *on* the corner instead leaves the default butt
+ * cap slicing the band off diagonally right where one tile has to hand
+ * over to the next - which every tile does identically, so the join goes
+ * missing and continuous stripes come out as dashes.
+ */
+function buildStripePattern() {
+  const fill = CONFIG.MAP_FILL;
+  const size = fill.wildcardStripeSize;
+  const scale = Math.max(1, Math.round(window.devicePixelRatio || 1));
+  const side = size * scale;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = side;
+  canvas.height = side;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  ctx.scale(scale, scale);
+  ctx.strokeStyle = fill.wildcardStripeColor;
+  ctx.lineWidth = fill.wildcardStripeWidth;
+
+  // Past the edges by a whole tile either way: the caps end up well
+  // outside the canvas, and what's left inside is exactly the band an
+  // endless 45-degree line would leave there.
+  for (const offset of [-size, 0, size]) {
+    ctx.beginPath();
+    ctx.moveTo(offset - size, -size);
+    ctx.lineTo(offset + 2 * size, 2 * size);
+    ctx.stroke();
+  }
+
+  const { data } = ctx.getImageData(0, 0, side, side);
+  return {
+    image: { width: side, height: side, data: new Uint8Array(data) },
+    pixelRatio: scale,
+  };
 }
 
 /** How long (ms) a finger must stay down before it highlights rather than opening a card. */

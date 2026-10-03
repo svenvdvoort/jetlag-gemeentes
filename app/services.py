@@ -383,6 +383,9 @@ def claim_card(
     """
     Claim `card_id` for `team_color`.
 
+    A wild card needs `target_card_id`: the gemeente card it is being
+    played on, which has to be unclaimed still.
+
     Returns the list of newly-drawn cards that replenished the public
     board - 0, 1, or 2 of them:
       - a non-wild claim frees at most 1 slot (the claimed card itself,
@@ -426,8 +429,8 @@ def claim_card(
         session.flush()
 
         if card.is_wild_card:
-            # A wild card lets the team claim any not-yet-claimed regular
-            # card, regardless of that card's current visibility - that's
+            # A wild card lets the team claim a not-yet-claimed regular
+            # card regardless of that card's current visibility - that's
             # the whole point of a wild card.
             if target_card_id is None:
                 raise InvalidActionError(

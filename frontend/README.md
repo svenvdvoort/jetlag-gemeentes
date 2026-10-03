@@ -125,6 +125,51 @@ offline and don't break if someone else's hosting goes away - see
 `data/fonts/README.md`. Setting `GLYPHS_URL` to `""` turns labels off
 entirely and stops the map requesting any glyphs at all.
 
+**Wild-card stripes**: a wild card can only be played on some gemeentes -
+a Burger King card needs a Burger King - and while one is on the board,
+those gemeentes are striped. The scopes come from `GET /wildcards`,
+fetched once at startup beside `/pairs` since neither can change during a
+game; `State.stripedGemeenteNames()` intersects them with the wild cards
+actually in play and drops the gemeentes already claimed.
+
+The stripes cost a layer of their own rather than a property on
+`gemeentes-fill`, because `fill-pattern` ignores `fill-color`: one fill
+layer can draw a gemeente's state colour or the stripes, not both. So
+`gemeentes-wildcard-fill` sits directly above it, under every hover tint
+and outline, and like the highlight layers it carries its set of
+gemeentes as a `filter` rather than as per-feature properties.
+
+The pattern itself has to arrive as pixels - a MapLibre fill is WebGL,
+so there's no CSS gradient to hand it. `buildStripePattern()` draws a
+small diagonal tile on a canvas and registers it with `map.addImage()`;
+it's rendered at `devicePixelRatio` so it isn't soft on a phone, and the
+same line is drawn three times, offset by a tile left and right, so the
+part running off one edge is the part arriving on the other and the tile
+repeats seamlessly. `fill-pattern` tiles in screen space, so the stripes
+keep their width at every zoom. Colour and spacing live in
+`CONFIG.MAP_FILL.wildcardStripe*`, and the colour is baked into the image
+since the paint property can't set it. If a browser won't give us a 2D
+canvas the layer is skipped and the rest of the map carries on.
+
+**The gemeente panel**: tapping a gemeente - on the map or in the deck -
+opens one panel for everything you can do with it: its own challenge on
+top, then the wild cards that apply to it. Every challenge in the panel
+wears a pill saying where it stands (`On the public board`, `On your
+private board`, `Claimed by ...`, `Not on the board`), and only the ones
+actually in play get a button.
+
+Only those in-play wild cards are listed outright. The rest apply here
+too - worth knowing that this is a Burger King gemeente before the card
+turns up - but four of them at the same level bury the one line you can
+act on, so they sit behind a single "3 more wild cards apply here" fold
+that most gemeentes leave closed. Each entry is itself a `<details>`,
+since the descriptions run long and the list is there to be scanned.
+
+Playing a wild card from there needs no target picker: the gemeente is
+the panel you're standing in. The picker only appears on the other route
+in, tapping a wild card in the deck, and then it offers only the
+gemeentes that card applies to and hasn't lost to a claim.
+
 **Neighbour highlighting**: picking a gemeente fills and outlines it, and
 tints every gemeente it borders, so you can see at a glance what a claim
 would connect to. This is the one thing that deliberately sits outside

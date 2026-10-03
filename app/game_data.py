@@ -1,7 +1,8 @@
 """
 Static source data used to seed a new game's deck.
 
-GEMEENTES become regular challenge cards; WILD_CARDS become wild cards.
+GEMEENTES become regular challenge cards; the keys of WILD_CARDS become
+wild cards, each playable only on the gemeentes listed for it there.
 The challenge text for each of them lives in app/challenges.py, which is
 generated from challenges.csv by scripts/import_challenges.py - see the
 README. The Challenge type those entries use is defined here, next to the
@@ -13,7 +14,7 @@ import xml.etree.ElementTree as ET
 from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, Iterator, List, NamedTuple, Set, Tuple
+from typing import Dict, Iterator, List, NamedTuple, Optional, Set, Tuple
 
 
 class Challenge(NamedTuple):
@@ -91,17 +92,209 @@ GEMEENTES = [
     "Zwolle",
 ]
 
+# --------------------------------------------------------------------------
+# The wild cards, and which gemeentes each may be played on.
+#
+# This dict is the wild-card half of the deck: its keys, in order, are the
+# wild cards a new game is seeded with, and each value is the gemeentes
+# that card may be played on. Iterate it for the names - there is no
+# separate list to keep in sync, so a wild card cannot exist without the
+# gemeentes it is playable on.
+#
+# A wild card's challenge hangs off something that only exists in some
+# gemeentes - a Burger King, a stretch of the Pieterpad, a train station -
+# so the card can only be used there. claim_card enforces this, the board
+# stripes these gemeentes while the card is in play, and GET /wildcards
+# hands the lists to the frontend.
+#
 # New wild cards are appended rather than inserted: a card's card_id is its
-# position in GEMEENTES + WILD_CARDS, so appending leaves the ids of every
-# existing card alone.
-WILD_CARDS = [
-    "Pieterpad Wild Card",
-    "Nationale parken Wild Card",
-    "Burger King Wild Card",
-    "Station Wild Card",
-    "Intratuin Wild Card",
-    "Kinderboerderij Wild Card",
-]
+# position in GEMEENTES followed by these keys, so appending leaves the ids
+# of every existing card alone.
+#
+# Hand-maintained: this is a rule about the deck, which is why it lives
+# here next to the deck and not in the generated challenges.py. Every list
+# is checked against GEMEENTES at import time (below), so a typo is a
+# startup error rather than a gemeente quietly dropping off a card.
+#
+# Provenance per list matters, because they are not equally trustworthy -
+# see the comment on each. The two "drafted, UNVERIFIED" ones need checking
+# against reality before they are played with.
+# --------------------------------------------------------------------------
+
+WILD_CARDS: Dict[str, List[str]] = {
+    # From the spreadsheet's own "Gemeenten met Pieterpad" note, with
+    # "Oude Ijsselstreek" spelled as GEMEENTES spells it and "(Duitsland)"
+    # dropped - the path leaves the country for a stretch, but that is not
+    # a gemeente anyone can claim.
+    "Pieterpad Wild Card": [
+        "Bronckhorst",
+        "Doetinchem",
+        "Hardenberg",
+        "Hellendoorn",
+        "Hof van Twente",
+        "Lochem",
+        "Montferland",
+        "Ommen",
+        "Oude IJsselstreek",
+        "Rijssen-Holten",
+        "Zevenaar",
+    ],
+    # Drafted from the four national parks that reach into the play area:
+    # De Hoge Veluwe (Apeldoorn, Arnhem, Ede), Veluwezoom (Rheden,
+    # Rozendaal, Arnhem), Sallandse Heuvelrug (Hellendoorn,
+    # Rijssen-Holten) and Weerribben-Wieden (Steenwijkerland).
+    "Nationale parken Wild Card": [
+        "Apeldoorn",
+        "Arnhem",
+        "Ede",
+        "Hellendoorn",
+        "Rheden",
+        "Rijssen-Holten",
+        "Rozendaal",
+        "Steenwijkerland",
+        "Zwartewaterland",
+    ],
+    # From the spreadsheet's own "Gemeenten met Burger King" note, minus
+    # Amersfoort, which isn't in the deck. The sheet marks Zevenaar
+    # "gesloten?" - it is kept here, so drop it if that branch really has
+    # closed.
+    "Burger King Wild Card": [
+        "Apeldoorn",
+        "Arnhem",
+        "Barneveld",
+        "Enschede",
+        "Harderwijk",
+        "Zwolle",
+    ],
+    # Drafted: every gemeente in the deck with a train station. Shorter to
+    # state as the twelve without one - Dinkelland, Doesburg, Epe,
+    # Haaksbergen, Hattem, Heerde, Losser, Rozendaal, Scherpenzeel,
+    # Tubbergen, Wageningen, Zwartewaterland. Watch the ones where the
+    # station's name is not the gemeente's: Ede-Wageningen is in Ede and
+    # not in Wageningen, Wolfheze and Oosterbeek put Renkum on the list,
+    # 't Harde puts Elburg on it and Wezep puts Oldebroek on it.
+    "Station Wild Card": [
+        "Aalten",
+        "Almelo",
+        "Apeldoorn",
+        "Arnhem",
+        "Barneveld",
+        "Berkelland",
+        "Borne",
+        "Bronckhorst",
+        "Brummen",
+        "Dalfsen",
+        "Deventer",
+        "Doetinchem",
+        "Duiven",
+        "Ede",
+        "Elburg",
+        "Enschede",
+        "Ermelo",
+        "Hardenberg",
+        "Harderwijk",
+        "Hellendoorn",
+        "Hengelo",
+        "Hof van Twente",
+        "Kampen",
+        "Lochem",
+        "Montferland",
+        "Nijkerk",
+        "Nunspeet",
+        "Oldebroek",
+        "Oldenzaal",
+        "Olst-Wijhe",
+        "Ommen",
+        "Oost Gelre",
+        "Oude IJsselstreek",
+        "Putten",
+        "Raalte",
+        "Renkum",
+        "Rheden",
+        "Rijssen-Holten",
+        "Steenwijkerland",
+        "Twenterand",
+        "Voorst",
+        "Westervoort",
+        "Wierden",
+        "Winterswijk",
+        "Zevenaar",
+        "Zutphen",
+        "Zwolle",
+    ],
+    "Intratuin Wild Card": [
+        "Almelo",
+        "Apeldoorn",
+        "Arnhem",
+        "Aalten",
+        "Barneveld",
+        "Deventer",
+        "Duiven",
+        "Enschede",
+        "Lochem",
+        "Nijkerk",
+        "Zwolle",
+    ],
+    # Drafted, UNVERIFIED - the least reliable list here. The sheet has no
+    # note for it, and a kinderboerderij is small enough that its presence
+    # is a local fact rather than something derivable. These are the
+    # gemeentes whose main town is big enough to be a fair bet; check them
+    # before playing.
+    "Kinderboerderij Wild Card": [
+        "Almelo",
+        "Arnhem",
+        "Barneveld",
+        "Bronckhorst",
+        "Deventer",
+        "Duiven",
+        "Enschede",
+        "Hardenberg",
+        "Kampen",
+        "Lochem",
+        "Losser",
+        "Oldenzaal",
+        "Raalte",
+        "Zutphen",
+        "Zwolle",
+    ],
+}
+
+
+def _check_wild_cards() -> None:
+    """
+    Refuse to import on a misspelled gemeente in a wild card's list.
+
+    The mistake is invisible at runtime otherwise: a name that isn't in
+    GEMEENTES would quietly drop a gemeente the card is supposed to cover.
+    Same stance as scripts/import_challenges.py, which refuses to write
+    when the spreadsheet and GEMEENTES disagree.
+    """
+    known = set(GEMEENTES)
+    unknown = sorted(
+        {gemeente for names in WILD_CARDS.values() for gemeente in names} - known
+    )
+    if unknown:
+        raise ValueError(
+            "WILD_CARDS names gemeentes that aren't in GEMEENTES "
+            f"(a typo, or a gemeente outside the play area): {', '.join(unknown)}"
+        )
+
+
+_check_wild_cards()
+
+
+def gemeentes_for_wild_card(card_name: str) -> Optional[List[str]]:
+    """
+    The gemeentes `card_name` may be played on, or None if it isn't a wild
+    card this build knows about.
+
+    None means "unrestricted" to callers on purpose: a game created before
+    a wild card was renamed still holds the old name, and that card staying
+    playable everywhere beats it becoming unplayable mid-game.
+
+    The returned list is the one in WILD_CARDS - treat it as read-only.
+    """
+    return WILD_CARDS.get(card_name)
 
 
 # --------------------------------------------------------------------------
